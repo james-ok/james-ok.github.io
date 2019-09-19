@@ -3,8 +3,8 @@
 ## Source: https://github.com/hexojs/hexo/
 
 # Site
-title: james-ok
-subtitle: 浅夏晴空
+title: James
+subtitle: James
 description: 北冥有鱼，其名为鲲，鲲之大，不知其几千里也；
              化而为鸟，其名为鹏.
 keywords: james-ok,github
@@ -14,7 +14,7 @@ timezone:
 
 # URL
 ## If your site is put in a subdirectory, set url as 'http://yoursite.com/child' and root as '/child/'
-url: http://yoursite.com
+url: http://blog.easyjava.xyz
 root: /
 permalink: :year/:month/:day/:title/
 permalink_defaults:
