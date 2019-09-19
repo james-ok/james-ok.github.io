@@ -174,6 +174,21 @@ mark {
     color: #fff;
 }
 
+/*头部导航栏样式*/
+@media only screen and (max-width: 600px) {
+    header nav .brand-logo {
+        left: 80px;
+        width: 100px;
+        font-size: 1.6rem;
+        -webkit-transform: translateX(-50%);
+        transform: translateX(-50%);
+    }
+
+    header .brand-logo .logo-span {
+        font-size: 1.6rem !important;
+    }
+}
+
 .progress-bar {
     height: 4px;
     position: fixed;
@@ -183,21 +198,7 @@ mark {
     opacity: 0.8;
 }
 
-.sidenav-overlay {
-    z-index: 500;
-}
-
-.pd-header {
-    margin-top: -64px;
-}
-
-header .side-nav {
-    width: 240px;
-    z-index: 999;
-    box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.16), 0 7px 10px 0 rgba(0, 0, 0, 0.12);
-}
-
-nav {
+nav, .side-nav {
     box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.16), 0 7px 10px 0 rgba(0, 0, 0, 0.12);
 }
 
@@ -258,17 +259,18 @@ header .side-nav .menu-list li {
 header .side-nav .menu-list a {
     height: 50px;
     line-height: 50px;
-    color: #34495e !important;
+}
+
+header .side-nav .menu-list a i {
+    line-height: 16px;
 }
 
 .mobile-menu-list a i {
-    margin-left: 8px !important;
-    font-size: 1.16rem;
-    color: #34495e !important;
+    font-size: 1.1rem;
 }
 
 header .side-nav .fa-fw {
-    width: 3.3rem;
+    width: 5rem;
     text-align: left;
 }
 
@@ -348,15 +350,12 @@ header .go-back i {
     align-items: center;
     height: 60vh;
     padding: 0;
+    margin-top: -64px;
     border: 0;
     overflow: hidden;
     background-position: center center;
     background-size: cover;
     transform: translate3d(0px, 0px, 0px);
-}
-
-.index-cover {
-    height: 100vh;
 }
 
 .post-cover {
@@ -484,21 +483,8 @@ header .go-back i {
     }
 }
 
-.carousel .indicators {
-    padding-bottom: 10px !important;
-}
-
 .index-card {
-    margin-top: -50px;
-    padding-top: 20px;
-}
-
-.carousel-post .title {
-    font-size: 2.6rem;
-}
-
-.carousel-post .cover-btns a {
-    margin-top: -30px;
+    margin-top: -40px;
 }
 
 .dream {
@@ -692,7 +678,7 @@ article a:hover {
 }
 
 article .card {
-    border-radius: 8px;
+    border-radius: 10px;
 }
 
 article .card-image {
@@ -738,7 +724,6 @@ article .article-content .publish-author {
 
 article .card .card-action {
     padding: 10px 15px 10px 18px;
-    border-radius: 0 0 8px 8px !important;
 }
 
 article .article-tags .chip {
@@ -776,10 +761,6 @@ article .article-tags .chip {
 .prev-next .right-badge {
     border-radius: 5px 0 0 5px;
     right: 10px;
-}
-
-.paging {
-    margin-bottom: 15px;
 }
 
 .paging .row {
@@ -935,8 +916,8 @@ article .article-tags .chip {
 }
 
 #artDetail .reprint .reprint-tip {
-    margin: 0 3px 22px 0;
-    font-size: 1.5rem;
+    margin-right: 3px;
+    font-size: 1.05rem;
     font-weight: 500;
 }
 
@@ -982,14 +963,14 @@ article .article-tags .chip {
 }
 
 #articleContent ol,
-#articleContent ul {
+ul {
     display: block;
-    padding-left: 2em !important;
+    padding-left: 2em;
     word-spacing: 0.05rem;
 }
 
 #articleContent ul li,
-#articleContent ol li {
+ol li {
     display: list-item;
     line-height: 1.8rem;
     font-size: 1rem;
@@ -1075,7 +1056,7 @@ table tr:nth-child(2n), thead {
 
 .chip-container .chip {
     margin: 10px 10px;
-    padding: 0 14px;
+    padding: 0 16px;
     display: inline-block;
     height: 38px;
     min-width: 80px;
@@ -1619,7 +1600,7 @@ footer .copy-right {
 
 /*搜索层样式*/
 #searchIcon {
-    font-size: 1.2rem;
+    font-size: 1.6rem;
 }
 
 #searchModal {
@@ -1667,7 +1648,7 @@ footer .copy-right {
     display: none;
     position: fixed;
     right: 20px;
-    bottom: 15px;
+    bottom: 30px;
     padding-top: 15px;
     margin-bottom: 0;
     z-index: 998;
@@ -1742,52 +1723,4 @@ footer .copy-right {
 .lg-sub-html .center-caption {
     color: #fff !important;
     border-bottom: none;
-}
-
-.overflow-policy {
-    overflow: hidden;
-}
-
-/* styles for '...' */
-.block-with-text {
-    /* hide text if it more than N lines  */
-    overflow: hidden;
-    /* for set '...' in absolute position */
-    position: relative;
-    /* use this value to count block height */
-    line-height: 1.5em;
-    /* max-height = line-height (1.2) * lines max number (3) */
-    max-height: 4.5em;
-    /* fix problem when last visible word doesn't adjoin right side  */
-    text-align: justify;
-    /* place for '...' */
-    margin-right: -1em;
-    padding-right: 1em;
-}
-
-/* create the ... style */
-.block-with-text:before {
-    /* points in the end */
-    content: '...';
-    /* absolute position */
-    position: absolute;
-    /* set position to right bottom corner of block */
-    right: 0;
-    bottom: 0;
-}
-
-/* hide ... if we have text, which is less than or equal to max lines */
-.block-with-text:after {
-    /* points in the end */
-    content: '';
-    /* absolute position */
-    position: absolute;
-    /* set position to right bottom corner of text */
-    right: 0;
-    /* set width and height */
-    width: 1em;
-    height: 1em;
-    margin-top: 0.2em;
-    /* bg color = bg color under block */
-    background: white;
 }

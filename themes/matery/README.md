@@ -11,7 +11,7 @@
 - Simple and beautiful, and post is Beautiful and readable.
 - [Material Design](https://material.io/).
 - Responsive design,which can be displayed well on desktop, tablet, mobile phone, etc.
-- Home page carousel posts and changing 'banner' picture dynamically everday.
+- Changing 'banner' picture dynamically everday.
 - Blog posts list with waterflow(There will be 24 images if the articl dosn't have  featured pictures).
 - Archive page with timeline.
 - Tags page of the **word cloud** and categories page of the **radar chart**
@@ -25,12 +25,6 @@
 - Comment module of [Gitalk](https://gitalk.github.io/), [Gitment](https://imsun.github.io/gitment/), [Valine](https://valine.js.org/) and [Disqus](https://disqus.com/).(Gitalk is recommended)
 - Integrated [Busuanzi Statistics](http://busuanzi.ibruce.info/), `Google Analytics` and post word count statistics.
 - Support music playback and video playback on the homepage
-
-## Contributor
-
-Thanks to these contributors, without whom, hexo-theme-matery won't be this perfect.
-
-- [@HarborZeng](https://github.com/HarborZeng)
 
 ## Download
 
@@ -341,23 +335,19 @@ Everything in the Front-matter option is **not required**. But I still recommend
 | title      | Markdown's file title | Post title, it is highly recommended to fill in this option |
 | date       | Date and time when the file created | Publish time, it is highly recommended to fill in this option, and it is best to ensure that it is globally unique |
 | author     | `author` in root `_config.yml` | Post author                                    |
-| img        | a value in `featureImages`  | Post feature image，For exampl: `http://xxx.com/xxx.jpg` |
+| img        | a value in `featureImages` | Post feature image，For exampl: `http://xxx.com/xxx.jpg` |
 | top        | `true`                      | Recommended post (whether the post is topped), if the `top` value is `true`, it will be recommended as a homepage post. |
-| cover      | `false`                     | The `v1.0.2` version is added to indicate whether the post needs to be added to the homepage carousel cover. |
-| coverImg   | null                        | The new version of `v1.0.2` indicates that the post needs to display the image path on the cover of the homepage. If not, the default image of the post is used by default. |
-| password   | null                        | The post read the password. If you want to set the reading verification password for the article, you can set the value of `password`, which must be encrypted with `SHA256` to prevent others from seeing it. The premise is that the `verifyPassword` option is activated in the theme's `config.yml` |
+| password   | 无                          | The post read the password. If you want to set the reading verification password for the article, you can set the value of `password`, which must be encrypted with `SHA256` to prevent others from seeing it. The premise is that the `verifyPassword` option is activated in the theme's `config.yml` |
 | toc        | `true`                      | Whether TOC is turned on or not, you can turn off the TOC function for an article. The premise is that the `toc` option is activated in the theme's `config.yml` |
 | mathjax    | `false`                     | Whether to enable math formula support, whether this article starts `mathjax`, and you need to open it in the theme `_config.yml` file. |
-| summary    | null                        | Post summary, custom post summary content, if the attribute has a value, the post card summary will display the text, otherwise the program will automatically intercept part of the article as a summary |
-| categories | null                        | Article classification, the classification of this topic represents a macroscopically large classification, only one article is recommended for one classification. |
-| tags       | null                        | Post label, a post can have multiple labels |
-| reprintPolicy       | cc_by                        | Post reprint policy, value could be one of cc_by, cc_by_nd, cc_by_sa, cc_by_nc, cc_by_nc_nd, cc_by_nc_sa, cc0, noreprint and pay |
+| summary    | 无                          | Post summary, custom post summary content, if the attribute has a value, the post card summary will display the text, otherwise the program will automatically intercept part of the article as a summary |
+| categories | 无                          | Article classification, the classification of this topic represents a macroscopically large classification, only one article is recommended for one classification. |
+| tags       | 无                          | Post label, a post can have multiple labels |
 
 > **Note**: 
 > 1. post's featured piature will take remainder if not writing the `img` property,and chose the featured picture of theme to let all of post's picture **have their own characteristics**.
 > 2. The value of `date` should try to ensure that each article is unique, because `Gitalk` and `Gitment` recognize `id` in this topic are uniquely identified by the value of `date`.
 > 3. If you want to set the ability to read the verification password for the article, you should not only set the value of the password with SHA256 encryption in Front-matter, but also activate the configuration in the theme `_config.yml`.
-> 4. you can define reprint policy for a single article in the front-matter of the specific md file using this key: reprintPolicy
 
 The following are examples of the post's `Front-matter`.
 
@@ -379,8 +369,6 @@ date: 2018-09-07 09:25:00
 author: Qi Zhao
 img: /source/images/xxx.jpg
 top: true
-cover: true
-coverImg: /images/1.jpg
 password: 8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92
 toc: false
 mathjax: false
@@ -441,6 +429,11 @@ Search `.bg-color` to modify background color in `/source/css/matery.css` in the
     background-image: linear-gradient(to right, #4cbf30 0%, #0f9d58 100%);
 }
 
+/* The color of the text with the same background color is only used in one place on the front page. You can also apply it to other places.*/
+.text-color {
+    color: #0f9d58 !important;
+}
+
 @-webkit-keyframes rainbow {
    /* Dynamically switch background colors. */
 }
@@ -452,7 +445,7 @@ Search `.bg-color` to modify background color in `/source/css/matery.css` in the
 
 ### Modify banner picture and post's featured pictures
 
-You can change `banner` pictures in `/source/medias/banner` as you like .Theme code can switch  dynamically every day and just need 7 pictures.If you master `JavaScript`,you can change it to your favorite swithing logic,such as Random switching.The code of switching `banner`is in `<script></script>` of `/layout/_partial/bg-cover-content.ejs`file.
+You can change `banner` pictures in `/source/medias/banner` as you like .Theme code can switch  dynamically every day and just need 7 pictures.If you master `JavaScript`,you can change it to your favorite swithing logic,such as Random switching.The code of switching `banner`is in `<script></script>` of `/layout/_partial/bg-cover.ejs`file.
 
 ```javascript
 $('.bg-cover').css('background-image', 'url(/medias/banner/' + new Date().getDay() + '.jpg)');
@@ -462,25 +455,11 @@ There are 24 featured pictures in `/source/medias/featureimages`,you can add or 
 
 ## Changelog
 
-- v1.0.4
-  - Added the ability to customize the reprint rules for each post;
-  - Fix the problem that the custom summary of the previous page and the next page does not display;
-  - Fixed the problem that the link of the friends link was misplaced and changed to the layout of the waterfall stream;
-  - Other minor bugs fixes;
-- v1.0.3
-  - Added `TOC` expansion, shrink button and related configuration, this button is displayed by default;
-- v1.0.2
-  - Upgraded the [Materialize](https://materializecss.com/) framework version to `1.0.0`, refactoring and modifying some files or problems during the upgrade process;
-  - Added a full-screen carousel effect on the front cover of the home page to set more important posts to the home page carousel;
-  - Fix the first button on the front page is Chinese;
-  - Fixed an issue where clicking search input on the iPhone to get focus;
-  - Fixed an issue where the page was enlarged after the input box on the iPhone got focus;
-  - Fix some posts or UI display issues;
-- v1.0.1
-  - Adjust the file request path of `css` and `js` in the `_config.yml` of the theme, so that you can quickly configure their own CDN;
-  - Whether the new code is configurable or not, the default is a line break;
-  - The `TOC` function is activated by default, and the `Front-matter` configuration option for `TOC` is turned off for a post;
-  - Fixed an issue where the highlighted directory option was inaccurate when scrolling through the post;
-  - Remove the search box under `IOS` to automatically get the focus attribute, preventing the view from moving up after automatically getting the focus;
 - v1.0.0
-  - Added all the basic features;
+  - Added all the basic features;
+- v1.0.1
+  - Adjust the file request path of `css` and `js` in the `_config.yml` of the theme, so that you can quickly configure their own CDN;
+  - Whether the new code is configurable or not, the default is a line break;
+  - The `TOC` function is activated by default, and the `Front-matter` configuration option for `TOC` is turned off for a post;
+  - Fixed an issue where the highlighted directory option was inaccurate when scrolling through the post;
+  - Remove the search box under `IOS` to automatically get the focus attribute, preventing the view from moving up after automatically getting the focus;
