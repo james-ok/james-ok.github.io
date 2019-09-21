@@ -24,14 +24,14 @@ menu:
 # 配置首页显示"梦想"的语句.
 dream:
   enable: true
-  showTitle: true
+  showTitle: false
   title: 梦想还是要有的，万一实现了呢
-  text: 志在山顶的人，不会贪念山腰的风景。
+  text: 夫天地者，万物之逆旅也；光阴者，百代之过客也。而浮生若梦，为欢几何？
 
 # Whether to display the musics.
 # 是否在首页显示音乐.
 music:
-  enable: false
+  enable: true
   showTitle: true
   title: 听听音乐
   fixed: false # 开启吸底模式
@@ -144,8 +144,8 @@ clicklove:
 # 在”关于”页面中配置个人信息，包括头像、职业和个人介绍.
 profile:
   avatar: /medias/avatar.jpg
-  career: Software Engineer
-  introduction: If you wish to succeed, you should use persistence as your good friend, experience as your reference, prudence as your brother and hope as your sentry.
+  career: Java Coder
+  introduction: Life would be too smooth if it had no rubs in it. # 生活若无波折险阻，就会过于平淡无奇。
 
 # config my projects informations in about page.
 # If you don't want to display this `My Projects` content, you can deactivate or delete this configuration.
@@ -259,7 +259,7 @@ valine:
 # 配置是否在 header 中显示 fork me on github 的图标，默认为true，你可以修改为你的仓库地址.
 githubLink:
   enable: true
-  url: https://github.com/blinkfox/hexo-theme-matery
+  url: https://github.com/james-ok
   title: Fork Me
 
 # The password verification feature of read post. To use this feature,
