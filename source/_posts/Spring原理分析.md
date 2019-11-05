@@ -44,3 +44,26 @@ Spring中依赖注入常见循环注入问题，那么什么是循环注入呢�
 此种方式可以正常完成依赖注入，因为这种方式是先创建对象，再注入依赖对象，拿之前的例子来说，首先创建对象A，发现对象A依赖对象B，这个时候创建对象B，继而创建对象C，在创建完对象C过后，发现对象C依赖对象A，
 这个时候将已经创建的对象A注入给对象C，所以，这种方式的循环注入并不会出现问题。
 
+## SpringMVC实现原理
+SpringMVC的实现原理可以分为三个阶段，分别是：
+* 配置阶段
+* 初始化阶段
+* 请求执行阶段
+
+### 配置阶段
+该阶段主要是配置SpringMVC的核心Servlet以及指定Spring的配置文件位置，配置监听等。
+
+### 初始化阶段
+初始化SpringMVC九大组件
+```java
+this.initMultipartResolver(context);
+this.initLocaleResolver(context);
+this.initThemeResolver(context);
+this.initHandlerMappings(context);
+this.initHandlerAdapters(context);
+this.initHandlerExceptionResolvers(context);
+this.initRequestToViewNameTranslator(context);
+this.initViewResolvers(context);
+this.initFlashMapManager(context);
+```
+
