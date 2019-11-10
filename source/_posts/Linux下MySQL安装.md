@@ -93,4 +93,9 @@ ERROR 1064 (42000): You have an error in your SQL syntax; check the manual that 
 mysql> ALTER USER 'root'@'localhost' IDENTIFIED BY 'cjwan1314+';
 Query OK, 0 rows affected (0.00 sec)
 ```
+## 开启防火墙
+查询端口是否开放`firewall-cmd --query-port=3306/tcp`
+开放端口`firewall-cmd --zone=public --add-port=3306/tcp --permanent`
+重启防火墙`systemctl restart firewalld.service`
+
 MySQL安装到此完毕！！
