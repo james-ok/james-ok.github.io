@@ -98,9 +98,6 @@ toc:
 # Whether the code is broken.
 # 代码是否折行
 code:
-  lang: true
-  copy: true
-  shrink: true
   break: false
 
 
