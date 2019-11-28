@@ -409,3 +409,72 @@ public void doRegister(URL url) {
 以上就是服务注册已经服务暴露全过程。
 
 ## 服务引用初始化过程
+Dubbo服务引用的时机有两个，第一个是Spring容器在调用`ReferenceBean`中`afterPropertiesSet`方法时，第二个是`ReferenceBean`对应的服务在被注入到其他对象中时，两者的区别在于第一种是饿汉式的，第二种是懒汉式的，
+Dubbo默认是懒汉式的，我们可以通过配置`<dubbo:reference init='true'>`来将其改为饿汉式。
+不管服务引用是饿汉还是懒汉模式，Dubbo都会调用`ReferenceBean`的`getObject`方法，接下来我们就从`getObject`方法开始分析，在`get`方法中，如果`ReferenceBean`对应的服务引用对象`ref`已存在，则直接返回，
+如果不存在，则先调用`init`方法，服务引用对象`ref`就是在这里面进行创建的。`init`方法中除了对配置解析拼接到map中以外，最重要的是`ref = createProxy(map);`方法，在`createProxy`方法中，
+首先是判断是否是本地调用，如果是，则创建`InjvmProtocol`的`refer`方法创建`InjvmInvoker`，则读取直连配置或注册中心URL（这里需要注意的是，如果选择了服务直连的方式，注册中心将失效，该方式用于在开发阶段调试过后一定要记得将其关掉），
+如果urls只要一个，则直接通过`refProtocol.refer()`调用，如果urls有多个，则循环调用`refprotocol.refer`并且将invoker放到`invokers`List中，最后调用`cluster.join(new StaticDirectory(invokers))`将多个`invoker`伪装成一个`invoker`,
+并且传入一个`StaticDirectory`静态目录服务，因为这里要么是多个注册中心，要么是多个服务提供者，而这些`invoker`是不会动态变化的。这个时候的`cluster`是一个自适应扩展点`Cluster$Adaptive`，循环调用时需要注意，如果有多个注册中心，
+则在URL中添加`cluster`参数，值为`registryaware`,同样调用`cluster.join(new StaticDirectory(u,invokers))`，不过这里在创建`StaticDirectory`静态目录服务的时候多传入了一个注册中心的URL。这里先不去深究。
+接下来分析`invoker`的创建过程，`invoker`的创建是通过`protocol.refer`方法，`protocol`的实现有很多，常用的是`RegistryProtocol`（注册中心）和`DubboProtocol`（服务直连使用Dubbo协议），这里只分析这两种协议。
+
+### DubboProtocol
+```java
+class DubboProtocol {
+    //...
+    @Override
+    public <T> Invoker<T> refer(Class<T> serviceType, URL url) throws RpcException {
+        optimizeSerialization(url);
+        // create rpc invoker.
+        DubboInvoker<T> invoker = new DubboInvoker<T>(serviceType, url, getClients(url), invokers);
+        invokers.add(invoker);
+        return invoker;
+    }
+    
+    private ExchangeClient[] getClients(URL url) {
+        // whether to share connection
+        boolean service_share_connect = false;
+        int connections = url.getParameter(Constants.CONNECTIONS_KEY, 0);
+        // if not configured, connection is shared, otherwise, one connection for one service
+        if (connections == 0) {
+            service_share_connect = true;
+            connections = 1;
+        }
+        ExchangeClient[] clients = new ExchangeClient[connections];
+        for (int i = 0; i < clients.length; i++) {
+            if (service_share_connect) {
+                clients[i] = getSharedClient(url);
+            } else {
+                clients[i] = initClient(url);
+            }
+        }
+        return clients;
+    }
+    //...
+}
+```
+DubboProtocol的`refer`方法很简单，直接创建一个`DubboInvoker`返回，但是这里值得注意的是`getClients(url)`方法，该方法中，首先会从url中读取参数`connections`，该参数在
+```xml
+<dubbo:reference id="helloService" interface="xyz.easyjava.dubbo.api.IHelloService" url="dubbo://10.98.217.74:20880;dubbo://10.98.217.73:20880" connections="0"/>
+```
+中被指定，如果不指定，则默认为0，该值有三个，分别是：
+* 0：表示该服务使用JVM共享长连接（缺省）
+* 1：表示该服务使用独立一条长连接
+* 2：表示该服务使用独立两条长连接，这种方式一般使用于负载较大的服务。
+所以，这里默认使用JVM共享长连接的方法，这个时候代码会执行`getSharedClient(url)`，该方法中首先从缓存中取，如果缓存未命中，则调用`initClient(url)`创建一个新的`ExchangeClient`，最后通过`ReferenceCountExchangeClient`包装过后放入到缓存最后返回，
+再来看一下`initClient`方法，`initClient`方法首先判断客户端类型，默认为Netty，并且设置默认心跳间隔时间，最后判断是否延迟链接，如果是延迟连接，则创建`LazyConnectExchangeClient`，否则调用`Exchangers.connect(url, requestHandler)`,
+延迟`LazyConnectExchangeClient`在发送请求之前调用`Exchangers.connect(url, requestHandler)`方法，所以，这里我们直接分析，实际上这里最终调用的是`HeaderExchanger.connect(URL url, ExchangeHandler handler)`，
+```java
+class HeaderExchanger {
+    //...
+    @Override
+    public ExchangeClient connect(URL url, ExchangeHandler handler) throws RemotingException {
+        return new HeaderExchangeClient(Transporters.connect(url, new DecodeHandler(new HeaderExchangeHandler(handler))), true);
+    }
+    //...
+}
+```
+经过深入分析，`Transporters.connect`最终调用的是`NettyTransporter.connect`，方法中直接创建一个`NettyClient`，最终在`NettyClient`中连接目标服务，并且保存着客户端和服务间的`channel`，建立长连接。
+
+### RegistryProtocol
