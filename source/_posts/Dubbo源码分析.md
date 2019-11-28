@@ -222,7 +222,9 @@ Dubbo服务的发布流程是从ServiceBean开始的，因为该类实现了接�
 在`export`方法中主要是调用`ServiceBean`父类`ServiceConfig`的`export`方法，在该方法中，首先也是一堆的校验，最后调用`doExport`方法，继续往下看，`doExportUrls()`方法中首先是将所有的注册中心配置拼装成一个URL集合，类似如下：
 `registry://localhost:2181/org.apache.dubbo.registry.RegistryService?application=easyjava-dubbo-provider&dubbo=2.0.2&pid=205792&registry=zookeeper&release=2.7.0&timestamp=1574749134905`，然后用循环的方式调用`doExportUrlsFor1Protocol`，
 该方法主要作用是将服务拼装成一个URL，如下：
-`dubbo://10.98.217.74:20880/xyz.easyjava.dubbo.api.IHelloService?anyhost=true&application=easyjava-dubbo-provider&bean.name=xyz.easyjava.dubbo.api.IHelloService&bind.ip=10.98.217.74&bind.port=20880&dubbo=2.0.2&generic=false&interface=xyz.easyjava.dubbo.api.IHelloService&methods=sayHello&pid=205792&release=2.7.0&side=provider&timestamp=1574749545179`
+```
+dubbo://10.98.217.74:20880/xyz.easyjava.dubbo.api.IHelloService?anyhost=true&application=easyjava-dubbo-provider&bean.name=xyz.easyjava.dubbo.api.IHelloService&bind.ip=10.98.217.74&bind.port=20880&dubbo=2.0.2&generic=false&interface=xyz.easyjava.dubbo.api.IHelloService&methods=sayHello&pid=205792&release=2.7.0&side=provider&timestamp=1574749545179
+```
 最后将调用一下这句代码
 ```java
 Invoker<?> invoker = proxyFactory.getInvoker(ref, (Class) interfaceClass, registryURL.addParameterAndEncoded(Constants.EXPORT_KEY, url.toFullString()));
@@ -234,8 +236,99 @@ Exporter<?> exporter = protocol.export(wrapperInvoker);
 `ProxyFactory`默认扩展点是`JavassistProxyFactory`，并且该扩展点有一个包装器`StubProxyFactoryWrapper`，所以，`proxyFactory`实际上是`StubProxyFactoryWrapper(JavassistProxyFactory())`
 调用`StubProxyFactoryWrapper(JavassistProxyFactory())`的`getInvoker`方法，实际上最终会调用到`JavassistProxyFactory`的`getInvoker`方法，传入删个参数，第一个`ref`是当前服务接口的实现类，
 例如：`HelloServiceImpl`，第二个参数`(Class) interfaceClass`是当前服务接口的类对象，第三个参数是注册中心加上服务地址拼接成的一个注册中心地址，服务地址作为注册中心的`export`参数，如下：
-`registry://localhost:2181/org.apache.dubbo.registry.RegistryService?application=easyjava-dubbo-provider&dubbo=2.0.2&export=dubbo%3A%2F%2F10.98.217.74%3A20880%2Fxyz.easyjava.dubbo.api.IHelloService%3Fanyhost%3Dtrue%26application%3Deasyjava-dubbo-provider%26bean.name%3Dxyz.easyjava.dubbo.api.IHelloService%26bind.ip%3D10.98.217.74%26bind.port%3D20880%26dubbo%3D2.0.2%26generic%3Dfalse%26interface%3Dxyz.easyjava.dubbo.api.IHelloService%26methods%3DsayHello%26pid%3D205792%26release%3D2.7.0%26side%3Dprovider%26timestamp%3D1574749545179&pid=205792&registry=zookeeper&release=2.7.0&timestamp=1574749134905`，
-该方法会返回一个`AbstractProxyInvoker`，其中`doInvoke(T proxy, String methodName,Class<?>[] parameterTypes,Object[] arguments)`中会调用代理Wrapper类中`wrapper.invokeMethod(proxy, methodName, parameterTypes, arguments);`方法,
+```
+registry://localhost:2181/org.apache.dubbo.registry.RegistryService?application=easyjava-dubbo-provider&dubbo=2.0.2&export=dubbo%3A%2F%2F10.98.217.74%3A20880%2Fxyz.easyjava.dubbo.api.IHelloService%3Fanyhost%3Dtrue%26application%3Deasyjava-dubbo-provider%26bean.name%3Dxyz.easyjava.dubbo.api.IHelloService%26bind.ip%3D10.98.217.74%26bind.port%3D20880%26dubbo%3D2.0.2%26generic%3Dfalse%26interface%3Dxyz.easyjava.dubbo.api.IHelloService%26methods%3DsayHello%26pid%3D205792%26release%3D2.7.0%26side%3Dprovider%26timestamp%3D1574749545179&pid=205792&registry=zookeeper&release=2.7.0&timestamp=1574749134905
+```
+在该方法中，主要做了两件事情：
+1. 创建一个当前实例对象的`Wrapper`（代理对象），这里为什么需要有这样一层包装，我猜想的话应该是Dubbo的调用是通过URL进行的，我们可以方便的通过传入参数来决定调用哪个方法，我们通过`Arthas`来看一下`Wrapper`对象代码：
+```java
+package org.apache.dubbo.common.bytecode;
+
+import java.lang.reflect.InvocationTargetException;
+import java.util.Map;
+import org.apache.dubbo.common.bytecode.ClassGenerator;
+import org.apache.dubbo.common.bytecode.NoSuchMethodException;
+import org.apache.dubbo.common.bytecode.NoSuchPropertyException;
+import org.apache.dubbo.common.bytecode.Wrapper;
+import xyz.easyjava.dubbo.provider.service.HelloServiceImpl;
+
+public class Wrapper1
+extends Wrapper
+implements ClassGenerator.DC {
+    public static String[] pns;
+    public static Map pts;
+    public static String[] mns;
+    public static String[] dmns;
+    public static Class[] mts0;
+
+    @Override
+    public String[] getPropertyNames() {
+        return pns;
+    }
+
+    @Override
+    public boolean hasProperty(String string) {
+        return pts.containsKey(string);
+    }
+
+    public Class getPropertyType(String string) {
+        return (Class)pts.get(string);
+    }
+
+    @Override
+    public String[] getMethodNames() {
+        return mns;
+    }
+
+    @Override
+    public String[] getDeclaredMethodNames() {
+        return dmns;
+    }
+
+    @Override
+    public void setPropertyValue(Object object, String string, Object object2) {
+        try {
+            HelloServiceImpl helloServiceImpl = (HelloServiceImpl)object;
+        }
+        catch (Throwable throwable) {
+            throw new IllegalArgumentException(throwable);
+        }
+        throw new NoSuchPropertyException(new StringBuffer().append("Not found property \"").append(string).append("\" field or setter method in class xyz.easyjava.dubbo.provider.service.HelloServiceImpl.").toString());
+    }
+
+    @Override
+    public Object getPropertyValue(Object object, String string) {
+        try {
+            HelloServiceImpl helloServiceImpl = (HelloServiceImpl)object;
+        }
+        catch (Throwable throwable) {
+            throw new IllegalArgumentException(throwable);
+        }
+        throw new NoSuchPropertyException(new StringBuffer().append("Not found property \"").append(string).append("\" field or setter method in class xyz.easyjava.dubbo.provider.service.HelloServiceImpl.").toString());
+    }
+
+    public Object invokeMethod(Object object, String string, Class[] arrclass, Object[] arrobject) throws InvocationTargetException {
+        HelloServiceImpl helloServiceImpl;
+        try {
+            helloServiceImpl = (HelloServiceImpl)object;
+        }
+        catch (Throwable throwable) {
+            throw new IllegalArgumentException(throwable);
+        }
+        try {
+            if ("sayHello".equals(string) && arrclass.length == 1) {
+                return helloServiceImpl.sayHello((String)arrobject[0]);
+            }
+        }
+        catch (Throwable throwable) {
+            throw new InvocationTargetException(throwable);
+        }
+        throw new NoSuchMethodException(new StringBuffer().append("Not found method \"").append(string).append("\" in class xyz.easyjava.dubbo.provider.service.HelloServiceImpl.").toString());
+    }
+}
+```
+2. 创建一个匿名AbstractProxyInvoker，且`doInvoke`方法实际上是调用的`Wrapper`代理对象的`invokeMethod`方法
+最后，该方法会返回一个`AbstractProxyInvoker`，其中`doInvoke(T proxy, String methodName,Class<?>[] parameterTypes,Object[] arguments)`中会调用代理Wrapper类中`wrapper.invokeMethod(proxy, methodName, parameterTypes, arguments);`方法,
 得到invoker过后，再次用`DelegateProviderMetaDataInvoker`包装一下，通过`protocol.export(wrapperInvoker);`传入`DelegateProviderMetaDataInvoker`实例对象，得到一个`exporter`，那么这里的`protocol`又是什么实现呢，
 `Protocol protocol = ExtensionLoader.getExtensionLoader(Protocol.class).getAdaptiveExtension();`这里又是一个自适应扩展点，会生成一个`Protocol$Adaptive`，我们前面已经分析过了，`Protocol$Adaptive`会
 通过当前协议动态获取一个扩展点，那么当前URL的协议是`registry`,所以，这里应该会调用到`RegistryProtocol`的`export`方法，在该方法中，会调用`getRegistryUrl()`方法，这个方法将注册中心协议从`registry`改为
@@ -314,3 +407,5 @@ public void doRegister(URL url) {
 /dubbo/xyz.easyjava.dubbo.api.IHelloService/providers/dubbo%3A%2F%2F10.98.217.74%3A20880%2Fxyz.easyjava.dubbo.api.IHelloService%3Fanyhost%3Dtrue%26application%3Deasyjava-dubbo-provider%26bean.name%3Dxyz.easyjava.dubbo.api.IHelloService%26dubbo%3D2.0.2%26generic%3Dfalse%26interface%3Dxyz.easyjava.dubbo.api.IHelloService%26methods%3DsayHello%26pid%3D212032%26release%3D2.7.0%26side%3Dprovider%26timestamp%3D1574752829404
 ```
 以上就是服务注册已经服务暴露全过程。
+
+## 服务引用初始化过程
