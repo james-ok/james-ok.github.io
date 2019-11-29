@@ -234,7 +234,7 @@ Exporter<?> exporter = protocol.export(wrapperInvoker);
 `proxyFactory`是一个自适应扩展点，是`ServiceConfig`的成员变量
 `private static final ProxyFactory proxyFactory = ExtensionLoader.getExtensionLoader(ProxyFactory.class).getAdaptiveExtension();`
 `ProxyFactory`默认扩展点是`JavassistProxyFactory`，并且该扩展点有一个包装器`StubProxyFactoryWrapper`，所以，`proxyFactory`实际上是`StubProxyFactoryWrapper(JavassistProxyFactory())`
-调用`StubProxyFactoryWrapper(JavassistProxyFactory())`的`getInvoker`方法，实际上最终会调用到`JavassistProxyFactory`的`getInvoker`方法，传入删个参数，第一个`ref`是当前服务接口的实现类，
+调用`StubProxyFactoryWrapper(JavassistProxyFactory())`的`getInvoker`方法，实际上最终会调用到`JavassistProxyFactory`的`getInvoker`方法，传入三个参数，第一个`ref`是当前服务接口的实现类，
 例如：`HelloServiceImpl`，第二个参数`(Class) interfaceClass`是当前服务接口的类对象，第三个参数是注册中心加上服务地址拼接成的一个注册中心地址，服务地址作为注册中心的`export`参数，如下：
 ```
 registry://localhost:2181/org.apache.dubbo.registry.RegistryService?application=easyjava-dubbo-provider&dubbo=2.0.2&export=dubbo%3A%2F%2F10.98.217.74%3A20880%2Fxyz.easyjava.dubbo.api.IHelloService%3Fanyhost%3Dtrue%26application%3Deasyjava-dubbo-provider%26bean.name%3Dxyz.easyjava.dubbo.api.IHelloService%26bind.ip%3D10.98.217.74%26bind.port%3D20880%26dubbo%3D2.0.2%26generic%3Dfalse%26interface%3Dxyz.easyjava.dubbo.api.IHelloService%26methods%3DsayHello%26pid%3D205792%26release%3D2.7.0%26side%3Dprovider%26timestamp%3D1574749545179&pid=205792&registry=zookeeper&release=2.7.0&timestamp=1574749134905
@@ -478,3 +478,231 @@ class HeaderExchanger {
 经过深入分析，`Transporters.connect`最终调用的是`NettyTransporter.connect`，方法中直接创建一个`NettyClient`，最终在`NettyClient`中连接目标服务，并且保存着客户端和服务间的`channel`，建立长连接。
 
 ### RegistryProtocol
+在`RegistryProtocol`的`refer`方法中，首先设置URL协议头，从`registry`改为`Zookeeper`，然后通过注册中心工厂得到一个注册中心对象，这里得到的是`ZookeeperRegistry`，最后通过`group`判断调用`doRefer`方法的`cluster`参数应该是哪一个。
+这里并不影响主流程，我们接着看`doRefer`方法，方法代码如下：
+```java
+class RegistryProtocol {
+    //...
+    private <T> Invoker<T> doRefer(Cluster cluster, Registry registry, Class<T> type, URL url) {
+        RegistryDirectory<T> directory = new RegistryDirectory<T>(type, url);
+        directory.setRegistry(registry);
+        directory.setProtocol(protocol);
+        // all attributes of REFER_KEY
+        Map<String, String> parameters = new HashMap<String, String>(directory.getUrl().getParameters());
+        URL subscribeUrl = new URL(CONSUMER_PROTOCOL, parameters.remove(REGISTER_IP_KEY), 0, type.getName(), parameters);
+        if (!ANY_VALUE.equals(url.getServiceInterface()) && url.getParameter(REGISTER_KEY, true)) {
+            registry.register(getRegisteredConsumerUrl(subscribeUrl, url));
+        }
+        directory.buildRouterChain(subscribeUrl);
+        directory.subscribe(subscribeUrl.addParameter(CATEGORY_KEY,
+                PROVIDERS_CATEGORY + "," + CONFIGURATORS_CATEGORY + "," + ROUTERS_CATEGORY));
+        Invoker invoker = cluster.join(directory);
+        ProviderConsumerRegTable.registerConsumer(invoker, url, subscribeUrl, directory);
+        return invoker;
+    }
+    //...
+}
+```
+以上代码首先创建注册中心目录服务，并且设置器注册中心对象`ZookeeperRegistry`和协议`Protocol$Adaptive`，然后组装消费者URL`subscribeUrl`，注册到注册中心，构建路由器链，订阅providers,routers,configurators.
+最后执行`Invoker invoker = cluster.join(directory);`并返回`invoker`，首先来分析，服务订阅过程
+```java
+directory.subscribe(subscribeUrl.addParameter(CATEGORY_KEY,
+                PROVIDERS_CATEGORY + "," + CONFIGURATORS_CATEGORY + "," + ROUTERS_CATEGORY));
+```
+服务订阅过程从`directory.subscribe`开始，在`RegistryDirectory`中调用`registry.subscribe(url, this);`，这里的`registry`是在`doRefer`方法中注入的，实例为`ZookeeperRegistry`，在`ZookeeperRegistry`的`subscribe`方法中
+需要两个参数，一个URL和一个Listener，而这里传了this，说明这里this实现了`NotifyListener`接口，所以，这里传入的是this，接下来看`ZookeeperRegistry`的`subscribe`方法，发现该类中并没有此方法，那么必然会调父类的`subscribe`方法，
+这里又是一个模板方法，最终还是会调用子类的实现`doSubscribe`方法，该方法中主要注册`Zookeeper`监听，如果有如果有节点变动，则会通知到`ZookeeperRegistry`中`notify`方法，传入`listener`，该方法调用链为：
+```
+ZookeeperRegistry.notify -> ZookeeperRegistry.doNotify -> AbstractRegistry.notify -> listener.notify(categoryList)(RegistryDirectory.notify)
+```
+categoryList：该参数为providers,routers,configurators节点下的所有URL地址。该方法中首先将注册中心读取到的URL转换成对象，比如Router,Configurator最后调用`refreshInvoker`，下面看一下`refreshInvoker`方法的实现：
+```java
+class RegistryDirectory {
+    private void refreshInvoker(List<URL> invokerUrls) {
+        Assert.notNull(invokerUrls, "invokerUrls should not be null");
+
+        if (invokerUrls.size() == 1 && invokerUrls.get(0) != null && Constants.EMPTY_PROTOCOL.equals(invokerUrls
+                .get(0)
+                .getProtocol())) {
+            this.forbidden = true; // Forbid to access
+            this.invokers = Collections.emptyList();
+            routerChain.setInvokers(this.invokers);
+            destroyAllInvokers(); // Close all invokers
+        } else {
+            this.forbidden = false; // Allow to access
+            Map<String, Invoker<T>> oldUrlInvokerMap = this.urlInvokerMap; // local reference
+            if (invokerUrls == Collections.<URL>emptyList()) {
+                invokerUrls = new ArrayList<>();
+            }
+            if (invokerUrls.isEmpty() && this.cachedInvokerUrls != null) {
+                invokerUrls.addAll(this.cachedInvokerUrls);
+            } else {
+                this.cachedInvokerUrls = new HashSet<>();
+                this.cachedInvokerUrls.addAll(invokerUrls);//Cached invoker urls, convenient for comparison
+            }
+            if (invokerUrls.isEmpty()) {
+                return;
+            }
+            Map<String, Invoker<T>> newUrlInvokerMap = toInvokers(invokerUrls);// Translate url list to Invoker map
+
+            // state change
+            // If the calculation is wrong, it is not processed.
+            if (newUrlInvokerMap == null || newUrlInvokerMap.size() == 0) {
+                logger.error(new IllegalStateException("urls to invokers error .invokerUrls.size :" + invokerUrls.size() + ", invoker.size :0. urls :" + invokerUrls
+                        .toString()));
+                return;
+            }
+
+            List<Invoker<T>> newInvokers = Collections.unmodifiableList(new ArrayList<>(newUrlInvokerMap.values()));
+            // pre-route and build cache, notice that route cache should build on original Invoker list.
+            // toMergeMethodInvokerMap() will wrap some invokers having different groups, those wrapped invokers not should be routed.
+            routerChain.setInvokers(newInvokers);
+            this.invokers = multiGroup ? toMergeInvokerList(newInvokers) : newInvokers;
+            this.urlInvokerMap = newUrlInvokerMap;
+
+            try {
+                destroyUnusedInvokers(oldUrlInvokerMap, newUrlInvokerMap); // Close the unused Invoker
+            } catch (Exception e) {
+                logger.warn("destroyUnusedInvokers error. ", e);
+            }
+        }
+    }
+}
+```
+首先判断协议地址是否只有一个，并且协议为`empty`协议，如果是，销毁所有`invokers`，否则将URL列表转成`Invoker`（这里根据协议会创建`DubboInvoker`）列表得到`newUrlInvokerMap`，最后将赋值给`urlInvokerMap`，达到刷新`urlInvokerMap`的目的，
+并且关闭关闭未使用的`Invoker`，回到`RegistryProtocol`的`doRefer`方法的`Invoker invoker = cluster.join(directory);`，这行代码将服务目录传入，其目的是做客户端负载均衡和服务容错，总之提供集群服务治理支持，这块后面单独分析。
+
+
+### 创建代理
+不管是`DubboProtocol`还是`RegistryProtocol`最后都会返回一个`Invoker`，这个`Invoker`就是调用服务的客户端，里面封装了和服务端的长连接。但是如果我们直接将`Invoker`对象拿到业务代码中调用，这样对于我们的业务来说侵入性太高，
+所以Dubbo使用代理的方式实现业务的零侵入，回到`ReferenceConfig`的`createProxy`方法，在最后一行代码`return (T) proxyFactory.getProxy(invoker);`返回一个代理对象，这里的`proxyFactory`是一个`JavassistProxyFactory`,
+这里首先会调用父类`AbstractProxyFactory`的`getProxy`方法，然后调用`JavassistProxyFactory`的`getProxy`方法，代理类就是在该方法中被生成的，接下来看下生成的代理类：
+```java
+package org.apache.dubbo.common.bytecode;
+
+import com.alibaba.dubbo.rpc.service.EchoService;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import org.apache.dubbo.common.bytecode.ClassGenerator;
+import xyz.easyjava.dubbo.api.IHelloService;
+
+public class proxy0
+implements ClassGenerator.DC,
+EchoService,
+IHelloService {
+    public static Method[] methods;
+    private InvocationHandler handler;
+
+    public String sayHello(String string) {
+        Object[] arrobject = new Object[]{string};
+        Object object = this.handler.invoke(this, methods[0], arrobject);
+        return (String)object;
+    }
+
+    @Override
+    public Object $echo(Object object) {
+        Object[] arrobject = new Object[]{object};
+        Object object2 = this.handler.invoke(this, methods[1], arrobject);
+        return object2;
+    }
+
+    public proxy0() {
+    }
+
+    public proxy0(InvocationHandler invocationHandler) {
+        this.handler = invocationHandler;
+    }
+}
+```
+该代理类在创建实例的时候传入了一个`InvokerInvocationHandler(invoker)`，所以，服务调用时其实最终会调用到`InvokerInvocationHandler`的`invoke`方法：
+```java
+public class InvokerInvocationHandler implements InvocationHandler {
+    private static final Logger logger = LoggerFactory.getLogger(InvokerInvocationHandler.class);
+    private final Invoker<?> invoker;
+
+    public InvokerInvocationHandler(Invoker<?> handler) {
+        this.invoker = handler;
+    }
+
+    @Override
+    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+        String methodName = method.getName();
+        Class<?>[] parameterTypes = method.getParameterTypes();
+        if (method.getDeclaringClass() == Object.class) {
+            return method.invoke(invoker, args);
+        }
+        if ("toString".equals(methodName) && parameterTypes.length == 0) {
+            return invoker.toString();
+        }
+        if ("hashCode".equals(methodName) && parameterTypes.length == 0) {
+            return invoker.hashCode();
+        }
+        if ("equals".equals(methodName) && parameterTypes.length == 1) {
+            return invoker.equals(args[0]);
+        }
+
+        return invoker.invoke(createInvocation(method, args)).recreate();
+    }
+
+    private RpcInvocation createInvocation(Method method, Object[] args) {
+        RpcInvocation invocation = new RpcInvocation(method, args);
+        if (RpcUtils.hasFutureReturnType(method)) {
+            invocation.setAttachment(Constants.FUTURE_RETURNTYPE_KEY, "true");
+            invocation.setAttachment(Constants.ASYNC_KEY, "true");
+        }
+        return invocation;
+    }
+
+}
+```
+
+## 服务目录
+服务目录在前面将`RegistryProtocol`引入的时候已经讲过了，其主要作用是列出所有`invoker`，下面来看一下依赖关系：
+![Directory依赖关系](Dubbo源码分析/DirectoryDependency.png)
+由上图可见，`AbstractDirectory`里面实现了list服务列举方法，该方法肯定是一个模板方法，具体实现由子类提供，接下里分析它的两个实现`StaticDirectory`和`RegistryDirectory`，顾名思义，`StaticDirectory`是静态目录服务，
+即`invokers`是固定不变的，该目录适用于注册中心，比如有三个注册中心，那么这三个注册中心在运行过程中是不会动态改变的。`RegistryDirectory`是动态的，具体的`invokers`会根据服务注册中心的变动而变动。
+`StaticDirectory`实现很简单，这里不做过多分析，重点分析`RegistryDirectory`，`RegistryDirectory`实现了`NotifyListener`接口，改接口只有一个方法`notify`，该方法会在`ZookeeperRegistry`的`doSubscribe`（即服务订阅）时被注册，
+在`zookeeper`注册中心的服务节点变动时异步通知调用，得到更新过后的URL过后，会调用`refreshInvoker`方法刷新`Invoker`列表，改方法在服务引入时分析过了，主要就是将URL列表转换成`Invoker`列表，放到一个MAP中来达到更新`invoker`的目的。
+总结：服务目录可以看成是一个`List<Invoker>`。
+
+## 服务路由
+服务路由的作用是根据用户配置的路由规则来筛选服务提供者。比如有这样一条规则：
+```
+host = 10.20.153.10 => host = 10.20.153.11
+```
+该条规则表示 IP 为 10.20.153.10 的服务消费者只可调用 IP 为 10.20.153.11 机器上的服务，不可调用其他机器上的服务
+
+## 服务集群
+集群的工作可以分为两个阶段，第一：服务消费者初始化时创建`ClusterInvoker`对象，其目的是将`Directory`包装，伪装成一个`invoker`返回，第二：服务调用时，这个时候主要是调用`AbstractClusterInvoker`的`invoke`方法，该方法又是一个模板方法，
+最终会调用具体实现类的`doInvoke`方法，在`doInvoke`方法中，封装了一些集群容错的机制，就拿缺省的`FailoverClusterInvoker`来分析，该方式在调用时出现错误，如果是业务异常，则直接抛出，如果不是业务异常，记录异常，然后重试，
+重试次数可以在`retries`属性中指定，默认两次，不算第一次。
+
+## 负载均衡
+负载均衡是在服务调用过程中被确定的，具体在`invoker.invoke`方法中被初始化，这里的负载均衡器为`LoadBalance$Adaptive`，具体使用某个负载均衡器取决于用户配置，默认使用随机算法，这里不深入分析负载均衡算法。
+
+
+## 服务调用过程
+服务调用过程分为两个部分
+* 消费端发送请求
+* 服务端接受请求处理
+### 消费端发送请求
+在分析服务调用之前，先来看一下服务请求发送流程图
+![服务调用请求发送流程图](Dubbo源码分析/send-request-process.jpg)
+在前面服务引入创建代理时讲到，客户端是通过代理对象调用发送网络请求的，而代理对象是调用`InvokerInvocationHandler`的`invoke`方法，所以，服务调用过程理应从这里开始。
+该方法中，首先会封装请求参数`Invocation`对象，然后调用`invoker`的`invoke`方法，这里前面分析得出这里的`invoker`应该是`MockClusterInvoker`，这里不分析Dubbo的`Mock`机制，直接调用`FailoverClusterInvoker`的`invoker`方法，
+改方法在父类`AbstractClusterInvoker`中，在该方法中，主要是初始化了负载均衡器`RandomLoadBalance`，然后调用`FailoverClusterInvoker`的`doInvoke`方法，在该方法中，首先通过负载均衡器拿到一个`invoker`，这里的`invoker`是我们在目录服务中`RegistryDirectory`回调
+`notify`通知中创建的，这里创建的是`DubboInvoker`，所以这里调用`AbstractInvoker`中的`invoke`方法，然后该方法会调用`DubboInvoker`的`doInvoke`方法，当然，这中间会调用一些`Filter`这里不展开分析。
+在`doInvoke`方法中，会拿到`ReferenceCountExchangeClient`，然后调用`request`方法，这里的调用链比较长，如下：
+```
+ReferenceCountExchangeClient.request -> HeaderExchangeClient.request -> HeaderExchangeChannel.request -> HeaderExchangeClient.send -> HeaderExchangeChannel.send -> NettyChannel.send -> NioSocketChannel.writeAndFlush
+```
+由上面调用链可以看出，最终会通过Netty的channel调用writeAndFlush发送数据，最后将结果返回。当然这里面的数据编解码序列化在这里不展开。
+
+### 服务端接受请求处理
+服务端接受请求的入口在`NettyServerHandler`类中的`channelRead`方法，先来看一下调用链
+```
+NettyServerHandler.channelRead -> AbstractPeer.received -> MultiMessageHandler.received -> HeartbeatHandler.received -> AllChannelHandler.received(该方法中会创建一个线程去执行) -> ChannelEventRunnable.run
+-> DecodeHandler.received -> HeaderExchangeHandler.received -> HeaderExchangeHandler.handleRequest -> DubboProtocol$1.reply(这里的DubboProtocol$1是ExchangeHandlerAdapter的子类，定义在DubboProtocol中的匿名内部类，该方法中通过channel和invocation获取invoker对象)
+-> DelegateProviderMetaDataInvoker.invoke -> Wrapper1.invokeMethod -> HelloServiceImpl.sayHello
+```
+代码分析到这里，整个服务请求接受处理差不多就调用完了。
