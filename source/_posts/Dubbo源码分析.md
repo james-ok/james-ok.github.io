@@ -241,6 +241,7 @@ registry://localhost:2181/org.apache.dubbo.registry.RegistryService?application=
 ```
 在该方法中，主要做了两件事情：
 1. 创建一个当前实例对象的`Wrapper`（代理对象），这里为什么需要有这样一层包装，我猜想的话应该是Dubbo的调用是通过URL进行的，我们可以方便的通过传入参数来决定调用哪个方法，我们通过`Arthas`来看一下`Wrapper`对象代码：
+
 ```java
 package org.apache.dubbo.common.bytecode;
 
@@ -327,6 +328,7 @@ implements ClassGenerator.DC {
     }
 }
 ```
+
 2. 创建一个匿名AbstractProxyInvoker，且`doInvoke`方法实际上是调用的`Wrapper`代理对象的`invokeMethod`方法
 最后，该方法会返回一个`AbstractProxyInvoker`，其中`doInvoke(T proxy, String methodName,Class<?>[] parameterTypes,Object[] arguments)`中会调用代理Wrapper类中`wrapper.invokeMethod(proxy, methodName, parameterTypes, arguments);`方法,
 得到invoker过后，再次用`DelegateProviderMetaDataInvoker`包装一下，通过`protocol.export(wrapperInvoker);`传入`DelegateProviderMetaDataInvoker`实例对象，得到一个`exporter`，那么这里的`protocol`又是什么实现呢，
