@@ -252,6 +252,8 @@ public class TopicConsumer {
 
 ### 消息的同步发送和异步发送
 
+同步发送：消息生产者发送一条消息到`Broker`上，会被阻塞
+
 ## 消息发送原理分析
 
 ## 持久化消息和非持久化消息的存储原理
@@ -264,3 +266,17 @@ public class TopicConsumer {
 * JDBC With ActiveMQ Journal
 
 ## 消息消费原理分析
+
+## unconsumedMessages数据获取过程
+
+## 异步分发流程
+
+## prefetchSize与optimizeAcknowledge
+
+## 消息的确认过程
+
+## 消息的重发机制
+
+## 死信队列
+
+## ActiveMQ静态网络配置
