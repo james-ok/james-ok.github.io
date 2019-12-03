@@ -252,9 +252,55 @@ public class TopicConsumer {
 
 ### 消息的同步发送和异步发送
 
-同步发送：消息生产者发送一条消息到`Broker`上，会被阻塞
+同步发送：消息生产者发送一条消息到`Broker`上，会被阻塞直到`Broker`返回一条确认收到ACK，线程才会被释放，该方式确保了消息的可靠投递，但由于会阻塞，因此会有性能上的损耗。
+异步发送：消息生产者发送一条消息过后立即返回，当`Broker`处理完成过后，会回调返回消息确认ACK，这种方式性能相对较高，但丢失消息的可能性相对较高。
+
+默认情况下：非持久化的消息都是异步发送的。持久化消息在非事务模式下是同步发送的。在开启事务的情况下，消息都是异步发送。
+
+除了默认的发送策略外，我们可以设置消息发送的策略，通过在连接URL中添加参数`tcp://localhost:61616?jms.useAsyncSend=true`，也可以调用`ActiveMQConnectionFactory`的`setUseAsyncSend`为`true`
 
 ## 消息发送原理分析
+
+源码分析我们从`producer.send(message);`开始，当然前面还有`producer`的创建过程，先不看。`producer.send(message);`方法首先会调用到`ActiveMQMessageProducer`的`send`方法。该方法如下：
+```java
+class ActiveMQMessageProducer {
+    public void send(Destination destination, Message message, int deliveryMode, int priority, long timeToLive, AsyncCallback onComplete) throws JMSException {
+        checkClosed();
+        if (destination == null) {
+            if (info.getDestination() == null) {
+                throw new UnsupportedOperationException("A destination must be specified.");
+            }
+            throw new InvalidDestinationException("Don't understand null destinations");
+        }
+        ActiveMQDestination dest;
+        if (destination.equals(info.getDestination())) {
+            dest = (ActiveMQDestination)destination;
+        } else if (info.getDestination() == null) {
+            dest = ActiveMQDestination.transform(destination);
+        } else {
+            throw new UnsupportedOperationException("This producer can only send messages to: " + this.info.getDestination().getPhysicalName());
+        }
+        if (dest == null) {
+            throw new JMSException("No destination specified");
+        }
+        if (transformer != null) {
+            Message transformedMessage = transformer.producerTransform(session, this, message);
+            if (transformedMessage != null) {
+                message = transformedMessage;
+            }
+        }
+        if (producerWindow != null) {
+            try {
+                producerWindow.waitForSpace();
+            } catch (InterruptedException e) {
+                throw new JMSException("Send aborted due to thread interrupt.");
+            }
+        }
+        this.session.send(this, dest, message, deliveryMode, priority, timeToLive, producerWindow, sendTimeout, onComplete);
+        stats.onMessage();
+    }
+}
+```
 
 ## 持久化消息和非持久化消息的存储原理
 
