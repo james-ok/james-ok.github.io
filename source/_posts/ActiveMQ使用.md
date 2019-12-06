@@ -301,15 +301,204 @@ class ActiveMQMessageProducer {
     }
 }
 ```
+该方法中首先判断当前会话状态是否关闭，然后如果`producerWindow`不为null则判断当前消息根据发送窗口的大小判断是否阻塞，最后调用`ActiveMQSession`的`send`方法，该方法如下：
+```java
+class ActiveMQSession {
+    protected void send(ActiveMQMessageProducer producer, ActiveMQDestination destination, Message message, int deliveryMode, int priority, long timeToLive,
+                        MemoryUsage producerWindow, int sendTimeout, AsyncCallback onComplete) throws JMSException {
+        checkClosed();
+        if (destination.isTemporary() && connection.isDeleted(destination)) {
+            throw new InvalidDestinationException("Cannot publish to a deleted Destination: " + destination);
+        }
+        synchronized (sendMutex) {
+            // tell the Broker we are about to start a new transaction
+            doStartTransaction();//[1]
+            TransactionId txid = transactionContext.getTransactionId();
+            long sequenceNumber = producer.getMessageSequence();
+
+            //Set the "JMS" header fields on the original message, see 1.1 spec section 3.4.11
+            message.setJMSDeliveryMode(deliveryMode);
+            long expiration = 0L;
+            if (!producer.getDisableMessageTimestamp()) {
+                long timeStamp = System.currentTimeMillis();
+                message.setJMSTimestamp(timeStamp);
+                if (timeToLive > 0) {
+                    expiration = timeToLive + timeStamp;
+                }
+            }
+            message.setJMSExpiration(expiration);//[2]
+            message.setJMSPriority(priority);//[3]
+            message.setJMSRedelivered(false);//[4]
+
+            // transform to our own message format here
+            ActiveMQMessage msg = ActiveMQMessageTransformation.transformMessage(message, connection);
+            msg.setDestination(destination);
+            msg.setMessageId(new MessageId(producer.getProducerInfo().getProducerId(), sequenceNumber));
+
+            // Set the message id.
+            if (msg != message) {
+                message.setJMSMessageID(msg.getMessageId().toString());
+                // Make sure the JMS destination is set on the foreign messages too.
+                message.setJMSDestination(destination);
+            }
+            //clear the brokerPath in case we are re-sending this message
+            msg.setBrokerPath(null);
+
+            msg.setTransactionId(txid);
+            if (connection.isCopyMessageOnSend()) {
+                msg = (ActiveMQMessage)msg.copy();
+            }
+            msg.setConnection(connection);
+            msg.onSend();
+            msg.setProducerId(msg.getMessageId().getProducerId());
+            if (LOG.isTraceEnabled()) {
+                LOG.trace(getSessionId() + " sending message: " + msg);
+            }
+            //[5]
+            if (onComplete==null && sendTimeout <= 0 && !msg.isResponseRequired() && !connection.isAlwaysSyncSend() && (!msg.isPersistent() || connection.isUseAsyncSend() || txid != null)) {
+                this.connection.asyncSendPacket(msg);
+                if (producerWindow != null) {
+                    // Since we defer lots of the marshaling till we hit the
+                    // wire, this might not
+                    // provide and accurate size. We may change over to doing
+                    // more aggressive marshaling,
+                    // to get more accurate sizes.. this is more important once
+                    // users start using producer window
+                    // flow control.
+                    //[6]
+                    int size = msg.getSize();
+                    producerWindow.increaseUsage(size);
+                }
+            } else {
+                if (sendTimeout > 0 && onComplete==null) {
+                    this.connection.syncSendPacket(msg,sendTimeout);
+                }else {
+                    this.connection.syncSendPacket(msg, onComplete);
+                }
+            }
+
+        }
+    }
+}
+```
+该方法中也是先判断当前会话，然后采用同步的方式有序的执行.
+* 标注[1]:这里表示开启一个事务
+* 标注[2]:设置过期时间
+* 标注[3]:设置优先级
+* 标注[4]:设置为非重发消息
+* 标注[5]:这里的if判断决定消息是异步发送还是同步发送，这里有两种情况：当`onComplete`没有设置，并且发送超时时间小于0，并且不是必须返回`response`响应，并且不是同步发送模式，并且消息是非持久化或者连接器是异步发送模式或者存在事务ID时走异步发送，否则走同步发送
+* 标注[6]:异步发送会设置消息发送的大小
+咱们先来看异步发送，异步发送会调用`ActiveMQConnection`中的`doAsyncSendPacket`方法，该方法中会调用`transport.oneway`方法，那么这里的`transport`是什么呢，其实`transport`在创建`ActiveMQConnection`链接的时候就已经创建了
+代码在`ActiveMQConnectionFactory.createActiveMQConnection`方法中，`Transport transport = createTransport();`通过`createTransport`方法创建一个`transport`，代码如下：
+```java
+class ActiveMQConnectionFactory{
+    protected Transport createTransport() throws JMSException {
+        try {
+            URI connectBrokerUL = brokerURL;
+            String scheme = brokerURL.getScheme();
+            if (scheme == null) {
+                throw new IOException("Transport not scheme specified: [" + brokerURL + "]");
+            }
+            if (scheme.equals("auto")) {
+                connectBrokerUL = new URI(brokerURL.toString().replace("auto", "tcp"));
+            } else if (scheme.equals("auto+ssl")) {
+                connectBrokerUL = new URI(brokerURL.toString().replace("auto+ssl", "ssl"));
+            } else if (scheme.equals("auto+nio")) {
+                connectBrokerUL = new URI(brokerURL.toString().replace("auto+nio", "nio"));
+            } else if (scheme.equals("auto+nio+ssl")) {
+                connectBrokerUL = new URI(brokerURL.toString().replace("auto+nio+ssl", "nio+ssl"));
+            }
+            return TransportFactory.connect(connectBrokerUL);
+        } catch (Exception e) {
+            throw JMSExceptionSupport.create("Could not create Transport. Reason: " + e, e);
+        }
+    }
+}
+```
+通过`TransportFactory.connect`静态方法创建一个`Transport`
+```java
+class TransportFactory {
+    
+    private static final FactoryFinder TRANSPORT_FACTORY_FINDER = new FactoryFinder("META-INF/services/org/apache/activemq/transport/");
+    
+    public static Transport connect(URI location) throws Exception {
+        TransportFactory tf = findTransportFactory(location);
+        return tf.doConnect(location);
+    }
+    
+    public static TransportFactory findTransportFactory(URI location) throws IOException {
+        String scheme = location.getScheme();
+        if (scheme == null) {
+            throw new IOException("Transport not scheme specified: [" + location + "]");
+        }
+        TransportFactory tf = TRANSPORT_FACTORYS.get(scheme);
+        if (tf == null) {
+            // Try to load if from a META-INF property.
+            try {
+                tf = (TransportFactory)TRANSPORT_FACTORY_FINDER.newInstance(scheme);
+                TRANSPORT_FACTORYS.put(scheme, tf);
+            } catch (Throwable e) {
+                throw IOExceptionSupport.create("Transport scheme NOT recognized: [" + scheme + "]", e);
+            }
+        }
+        return tf;
+    }
+}
+```
+这里大概的逻辑是：先从`META-INF/services/org/apache/activemq/transport/`路径下找到指定`scheme`(这里的`scheme`是`tcp`)然后通过反射加载得到`org.apache.activemq.transport.tcp.TcpTransportFactory`，
+然后调用`TcpTransportFactory`的`doConnect`(该方法在父类`TransportFactory`中实现)，在该方法中，有这样一句代码`Transport rc = configure(transport, wf, options);`，该方法代码如下：
+```java
+class TransportFactory {
+    public Transport configure(Transport transport, WireFormat wf, Map options) throws Exception {
+        transport = compositeConfigure(transport, wf, options);
+
+        transport = new MutexTransport(transport);
+        transport = new ResponseCorrelator(transport);
+
+        return transport;
+    }
+}
+```
+该方法的作用是包装`Transport`，所以，最终得到的是`ResponseCorrelator(MutexTransport(WireFormatNegotiator(InactivityMonitor(TcpTransport))))`调用链，这是几个`Filter`，这几个`Filter`大致的作用是：
+* ResponseCorrelator：用于实现异步请求
+* MutexTransport：实现写锁，作用是保证了客户端向`Broker`发送消息时是按照顺序进行的，即同一时间只允许一个请求
+* InactivityMonitor：心跳机制，客户端每10s发送一次心跳，服务端每30s接受一次心跳
+* WireFormatNegotiator：实现客户端连接`Broker`时先发送协议数据信息
+然后调用`TcpTransportFactory`的`createTransport`方法，最终`new TcpTransport`对象，然后回到`ActiveMQConnectionFactory`
+中，在`createActiveMQConnection`方法中调用了`transport.start`方法，这里也是调用的父类`ServiceSupport.start`的方法，改方法是一个模板方法，实际上会调用`TcpTransport.doStart`方法，
+在这里面简历和`Broker`的连接，然后将该连接的`Socket`输出流保存到`dataOut`对象中。
+
+回到`ActiveMQConnection`中的`doAsyncSendPacket`方法中，调用`transport.oneway`方法，其实是调用的`TcpTransport.oneway`方法，这里会通过`dataOut`将消息发送到`Broker`上。
 
 ## 持久化消息和非持久化消息的存储原理
+当我们的应用场景不允许消息的丢失的时候，可以采用消息的持久化存储的方式来达到消息的永久存在，ActiveMQ支持五种消息的持久化机制。
 
 ### 持久化消息的物种存储方式
-* KahaDB
-* JDBC
-* LevelDB
-* Memory
-* JDBC With ActiveMQ Journal
+* KahaDB：默认ActiveMQ官方推荐的消息持久化方式，配置方式：
+```xml
+<persistenceAdapter>
+    <kahaDB directory="${activemq.data}/kahadb"/>
+</persistenceAdapter>
+```
+* JDBC：将消息持久化到关系型数据库中，支持MySQL，Oracle等主流数据库，该方式会在数据库中生成三张表，分别是：
+    * ACTIVEMQ_MSGS:用于存储持久化消息，Queue和Topic消息都在该表中
+    * ACTIVEMQ_ACKS:存储持久订阅消息和最后一个持久订阅接收的消息ID
+    * ACTIVEMQ_LOCKS:锁表，用来确保同一时刻只有一个`Broker`访问数据
+    配置方式：
+    ```xml
+    <persistenceAdapter>
+      <jdbcPersistenceAdapter dataSource="#MySQL-DS " createTablesOnStartup="true" />
+    </persistenceAdapter>
+    ```
+* LevelDB：性能高于KahaDB，并且支持LevelDB+Zookeeper实现数据复制，但是官方不推荐
+* Memory：内存，不做消息的持久化时的默认方式
+* JDBC With ActiveMQ Journal：该方式是为了优化JDBC的方式，延迟批量将消息持久化到关系型数据库中，`ActiveMQ Journal`使用高缓存写入技术，大大提示性能，当消费者的消费能力很强的时候能大大减少
+关系型数据库的事务操作，配置方式：
+```xml
+<persistenceFactory>
+    <journalPersistenceAdapterFactory dataSource="#Mysql-DS" dataDirectory="activemqdata"/>
+</persistenceFactory>
+```
 
 ## 消息消费原理分析
 
