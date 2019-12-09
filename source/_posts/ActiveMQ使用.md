@@ -467,8 +467,7 @@ class TransportFactory {
 * MutexTransport：实现写锁，作用是保证了客户端向`Broker`发送消息时是按照顺序进行的，即同一时间只允许一个请求
 * InactivityMonitor：心跳机制，客户端每10s发送一次心跳，服务端每30s接受一次心跳
 * WireFormatNegotiator：实现客户端连接`Broker`时先发送协议数据信息
-然后调用`TcpTransportFactory`的`createTransport`方法，最终`new TcpTransport`对象，然后回到`ActiveMQConnectionFactory`
-中，在`createActiveMQConnection`方法中调用了`transport.start`方法，这里也是调用的父类`ServiceSupport.start`的方法，改方法是一个模板方法，实际上会调用`TcpTransport.doStart`方法，
+然后调用`TcpTransportFactory`的`createTransport`方法，最终`new TcpTransport`对象，然后回到`ActiveMQConnectionFactory`中，在`createActiveMQConnection`方法中调用了`transport.start`方法，这里在后面讲。
 在这里面建立和`Broker`的连接，然后将该连接的`Socket`输出流保存到`dataOut`对象中。
 
 回到`ActiveMQConnection`中的`doAsyncSendPacket`方法中，调用`transport.oneway`方法，其实是调用的`TcpTransport.oneway`方法，这里会通过`dataOut`将消息发送到`Broker`上。
@@ -510,9 +509,203 @@ class TransportFactory {
 ## 消息消费原理分析
 
 消息消费从`ActiveMQMessageConsumer`的`receive`开始，该方法首先检查连接，然后检查是否设置了`Listener`（`ActiveMQ`消费端只允许一种方式接受消息，原因是多种方式消息消费的事务性不好管控），
-然后向`Broker`发送一个拉取消息的`pull`命令
+然后判断`prefetchSize`和`unconsumeMessages`是否为空，如果为空则向`Broker`发送一个拉取消息的`pull`命令，然后调用`dequeue`方法
+该方法从`unConsumeMessages`中获取一个消息，`unConsumeMessages`是一个未消费消息的通道，该通道的作用的，每次从`Broker`上拉取`prefetchSize`条消息保存到本地，减少了客户端和服务端
+频繁请求造成的网络开销。
+继续往下，会调用`beforeMessageIsConsumed(md);`方法，该方法主要作用是做一些消息消费前的一些准备工作，如果ACK类型不是`DUPS_OK_ACKNOWLEDGE`或者不是队列类型（也就是除了`Topic`类型和`DUPS_OK_ACKNOWLEDGE`）
+所有的消息先放到`deliveredMessages`链表的开头，并且如果是事务类型，则判断`transactedIndividualAck`，如果是true，表示单条消息直接返回ACK，否则，调用`ackLater`批量应答，消费端在消费
+消息过后，先不发送ACK(`pendingACK`)，等到堆积的`pendingACK`达到一定的阈值过后，通过一个ACK指定将之前的所有全部确认，在性能上，这种方式会高很多。
+然后继续往下，会调用`afterMessageIsConsumed`方法，该方法主要作用是执行应答，这里有以下几种情况
+* 如果消息过期，则返回消息过期的ack
+* 如果是事务类型的会话，则不做任何处理
+* 如果是AUTOACK或者（DUPS_OK_ACK且是队列），并且是优化ack操作，则走批量确认ack
+* 如果是DUPS_OK_ACK，则走ackLater逻辑
+* 如果是CLIENT_ACK，则执行ackLater
+代码如下：
+```java
+class ActiveMQMessageConsumer {
+    private void afterMessageIsConsumed(MessageDispatch md, boolean messageExpired) throws JMSException {
+        if (unconsumedMessages.isClosed()) {
+            return;
+        }
+        if (messageExpired) {
+            acknowledge(md, MessageAck.EXPIRED_ACK_TYPE);
+            stats.getExpiredMessageCount().increment();
+        } else {
+            stats.onMessage();
+            if (session.getTransacted()) {
+                // Do nothing.
+            } else if (isAutoAcknowledgeEach()) {
+                if (deliveryingAcknowledgements.compareAndSet(false, true)) {
+                    synchronized (deliveredMessages) {
+                        if (!deliveredMessages.isEmpty()) {
+                            if (optimizeAcknowledge) {
+                                ackCounter++;
+
+                                // AMQ-3956 evaluate both expired and normal msgs as
+                                // otherwise consumer may get stalled
+                                if (ackCounter + deliveredCounter >= (info.getPrefetchSize() * .65) || (optimizeAcknowledgeTimeOut > 0 && System.currentTimeMillis() >= (optimizeAckTimestamp + optimizeAcknowledgeTimeOut))) {
+                                    MessageAck ack = makeAckForAllDeliveredMessages(MessageAck.STANDARD_ACK_TYPE);
+                                    if (ack != null) {
+                                        deliveredMessages.clear();
+                                        ackCounter = 0;
+                                        session.sendAck(ack);
+                                        optimizeAckTimestamp = System.currentTimeMillis();
+                                    }
+                                    // AMQ-3956 - as further optimization send
+                                    // ack for expired msgs when there are any.
+                                    // This resets the deliveredCounter to 0 so that
+                                    // we won't sent standard acks with every msg just
+                                    // because the deliveredCounter just below
+                                    // 0.5 * prefetch as used in ackLater()
+                                    if (pendingAck != null && deliveredCounter > 0) {
+                                        session.sendAck(pendingAck);
+                                        pendingAck = null;
+                                        deliveredCounter = 0;
+                                    }
+                                }
+                            } else {
+                                MessageAck ack = makeAckForAllDeliveredMessages(MessageAck.STANDARD_ACK_TYPE);
+                                if (ack!=null) {
+                                    deliveredMessages.clear();
+                                    session.sendAck(ack);
+                                }
+                            }
+                        }
+                    }
+                    deliveryingAcknowledgements.set(false);
+                }
+            } else if (isAutoAcknowledgeBatch()) {
+                ackLater(md, MessageAck.STANDARD_ACK_TYPE);
+            } else if (session.isClientAcknowledge()||session.isIndividualAcknowledge()) {
+                boolean messageUnackedByConsumer = false;
+                synchronized (deliveredMessages) {
+                    messageUnackedByConsumer = deliveredMessages.contains(md);
+                }
+                if (messageUnackedByConsumer) {
+                    ackLater(md, MessageAck.DELIVERED_ACK_TYPE);
+                }
+            }
+            else {
+                throw new IllegalStateException("Invalid session state.");
+            }
+        }
+    }
+}
+```
 
 ## unconsumedMessages数据获取过程
+
+`unconsumedMessages`未消费的消息通道是在什么时候被赋值的，这应该从连接的创建过程说起，在`ActiveMQConnectionFactory#createActiveMQConnection`连接创建是调用了`TcpTransport#start`方法（实际上是`ServiceSupport#start`），该方法中
+调用`TcpTransport#doStart`，在该方法中通过`connect`方法和`Broker`创建连接，然后调用`TransportThreadSupport#doStart`，该方法中创建了一个线程，线程的内容在`TcpTransport`中，也就是`TcpTransport#run`，然后在
+该方法中，只要`TcpTransport`没有停止，则一直调用`TcpTransport#doRun`，然后调用`Object command = readCommand();`从`Broker`上读取一个`command`，最后调用`TransportSupport#doConsume`消费消息。
+整个过程调用链如下：
+```
+ActiveMQConnectionFactory#createConnection -> ActiveMQConnectionFactory#createActiveMQConnection -> ServiceSupper#start -> TcpTransport#doStart -> TransportThreadSupport#doStart
+-> TcpTransport#run -> TcpTransport#doRun -> TransportSupport#doConsume -> ActiveMQConnection#onCommand
+```
+### ActiveMQConnection#onCommand
+该方法中所有消息都会调用`visit`方法，该方法接受一个`CommandVisitor`，针对不同的消息做不同的处理，代码如下：
+```java
+class ActiveMQConnection {
+    public void onCommand(final Object o) {
+        final Command command = (Command)o;
+        if (!closed.get() && command != null) {
+            try {
+                command.visit(new CommandVisitorAdapter() {
+                    @Override
+                    public Response processMessageDispatch(MessageDispatch md) throws Exception {
+                        waitForTransportInterruptionProcessingToComplete();
+                        ActiveMQDispatcher dispatcher = dispatchers.get(md.getConsumerId());
+                        if (dispatcher != null) {
+                            // Copy in case a embedded broker is dispatching via
+                            // vm://
+                            // md.getMessage() == null to signal end of queue
+                            // browse.
+                            Message msg = md.getMessage();
+                            if (msg != null) {
+                                msg = msg.copy();
+                                msg.setReadOnlyBody(true);
+                                msg.setReadOnlyProperties(true);
+                                msg.setRedeliveryCounter(md.getRedeliveryCounter());
+                                msg.setConnection(ActiveMQConnection.this);
+                                msg.setMemoryUsage(null);
+                                md.setMessage(msg);
+                            }
+                            dispatcher.dispatch(md);
+                        } else {
+                            LOG.debug("{} no dispatcher for {} in {}", this, md, dispatchers);
+                        }
+                        return null;
+                    }
+
+                    @Override
+                    public Response processProducerAck(ProducerAck pa) throws Exception {
+                        if (pa != null && pa.getProducerId() != null) {
+                            ActiveMQMessageProducer producer = producers.get(pa.getProducerId());
+                            if (producer != null) {
+                                producer.onProducerAck(pa);
+                            }
+                        }
+                        return null;
+                    }
+
+                    @Override
+                    public Response processBrokerInfo(BrokerInfo info) throws Exception {
+                        brokerInfo = info;
+                        brokerInfoReceived.countDown();
+                        optimizeAcknowledge &= !brokerInfo.isFaultTolerantConfiguration();
+                        getBlobTransferPolicy().setBrokerUploadUrl(info.getBrokerUploadUrl());
+                        return null;
+                    }
+
+                    @Override
+                    public Response processConnectionError(final ConnectionError error) throws Exception {
+                        executor.execute(new Runnable() {
+                            @Override
+                            public void run() {
+                                onAsyncException(error.getException());
+                            }
+                        });
+                        return null;
+                    }
+
+                    @Override
+                    public Response processControlCommand(ControlCommand command) throws Exception {
+                        return null;
+                    }
+
+                    @Override
+                    public Response processConnectionControl(ConnectionControl control) throws Exception {
+                        onConnectionControl((ConnectionControl)command);
+                        return null;
+                    }
+
+                    @Override
+                    public Response processConsumerControl(ConsumerControl control) throws Exception {
+                        onConsumerControl((ConsumerControl)command);
+                        return null;
+                    }
+
+                    @Override
+                    public Response processWireFormat(WireFormatInfo info) throws Exception {
+                        onWireFormatInfo((WireFormatInfo)command);
+                        return null;
+                    }
+                });
+            } catch (Exception e) {
+                onClientInternalException(e);
+            }
+        }
+
+        for (Iterator<TransportListener> iter = transportListeners.iterator(); iter.hasNext();) {
+            TransportListener listener = iter.next();
+            listener.onCommand(command);
+        }
+    }
+}
+```
+如果传入的消息是`MessageDispatch`，则会调用`processMessageDispatch`方法
 
 ## 异步分发流程
 
