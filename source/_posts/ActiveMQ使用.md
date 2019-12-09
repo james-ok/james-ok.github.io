@@ -388,7 +388,10 @@ class ActiveMQSession {
 * 标注[4]:设置为非重发消息
 * 标注[5]:这里的if判断决定消息是异步发送还是同步发送，这里有两种情况：当`onComplete`没有设置，并且发送超时时间小于0，并且不是必须返回`response`响应，并且不是同步发送模式，并且消息是非持久化或者连接器是异步发送模式或者存在事务ID时走异步发送，否则走同步发送
 * 标注[6]:异步发送会设置消息发送的大小
-咱们先来看异步发送，异步发送会调用`ActiveMQConnection`中的`doAsyncSendPacket`方法，该方法中会调用`transport.oneway`方法，那么这里的`transport`是什么呢，其实`transport`在创建`ActiveMQConnection`链接的时候就已经创建了
+
+### 异步发送
+
+异步发送会调用`ActiveMQConnection`中的`doAsyncSendPacket`方法，该方法中会调用`transport.oneway`方法，那么这里的`transport`是什么呢，其实`transport`在创建`ActiveMQConnection`链接的时候就已经创建了
 代码在`ActiveMQConnectionFactory.createActiveMQConnection`方法中，`Transport transport = createTransport();`通过`createTransport`方法创建一个`transport`，代码如下：
 ```java
 class ActiveMQConnectionFactory{
@@ -466,9 +469,13 @@ class TransportFactory {
 * WireFormatNegotiator：实现客户端连接`Broker`时先发送协议数据信息
 然后调用`TcpTransportFactory`的`createTransport`方法，最终`new TcpTransport`对象，然后回到`ActiveMQConnectionFactory`
 中，在`createActiveMQConnection`方法中调用了`transport.start`方法，这里也是调用的父类`ServiceSupport.start`的方法，改方法是一个模板方法，实际上会调用`TcpTransport.doStart`方法，
-在这里面简历和`Broker`的连接，然后将该连接的`Socket`输出流保存到`dataOut`对象中。
+在这里面建立和`Broker`的连接，然后将该连接的`Socket`输出流保存到`dataOut`对象中。
 
 回到`ActiveMQConnection`中的`doAsyncSendPacket`方法中，调用`transport.oneway`方法，其实是调用的`TcpTransport.oneway`方法，这里会通过`dataOut`将消息发送到`Broker`上。
+
+### 同步发送
+
+在ActiveMQ中，同步发送其实也是调用的异步发送的方法，然后阻塞等待异步结果返回。
 
 ## 持久化消息和非持久化消息的存储原理
 当我们的应用场景不允许消息的丢失的时候，可以采用消息的持久化存储的方式来达到消息的永久存在，ActiveMQ支持五种消息的持久化机制。
@@ -501,6 +508,9 @@ class TransportFactory {
 ```
 
 ## 消息消费原理分析
+
+消息消费从`ActiveMQMessageConsumer`的`receive`开始，该方法首先检查连接，然后检查是否设置了`Listener`（`ActiveMQ`消费端只允许一种方式接受消息，原因是多种方式消息消费的事务性不好管控），
+然后向`Broker`发送一个拉取消息的`pull`命令
 
 ## unconsumedMessages数据获取过程
 
