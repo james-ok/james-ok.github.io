@@ -8,11 +8,11 @@ tags:
 ---
 相信大家遇到过这样的场景，用户注册这个简单的功能里面集成了太多不是很重要步骤，但又不得不做。比如发送邮件、发放优惠券、发送推销短信、记录日志，这样就导致了我们注册功能特别繁重，
 极大的拉低了接口性能，给用户带来体验度大大降低，明明就一个注册用户信息持久化的功能居然需要做这么多不是主线流程的事情。当你遇到这样的业务场景的时候就可以考虑使用消息队列来实现
-解耦，经过优化过后，我们的注册功能就只需要将用户信息持久化到数据库，然后小MQ中间件发送一条消息，然后返回，如果说之前的每个操作需要一秒，那总得就需要5S，但是经过使用MQ解耦过后
+解耦，经过优化过后，我们的注册功能就只需要将用户信息持久化到数据库，然后向MQ中间件发送一条消息，然后返回，如果说之前的每个操作需要一秒，那总得就需要5S，但是经过使用MQ解耦过后
 只需要1S左右，大大提升了用户体验。
 
 ## JMS
-JMS(Java Message Service)是Java为各个消息中间件提供的一套统一API规范，其目的是规避各个中间件协议、接口的不同而带来的不便。一下是JMS连接流程图：
+JMS(Java Message Service)是Java为各个消息中间件提供的一套统一API规范，其目的是规避各个中间件协议、接口的不同而带来的不便。以下是JMS连接流程图：
 ![JMS连接流程图](ActiveMQ使用/JMS流程.png)
 ### 消息传递模式
 JMS提供两种常见的消息传递模式或域，分别是：
@@ -40,8 +40,6 @@ JMS提供六种消息类型，分别是：
 * 解压:`tar -zxvf apache-activemq-5.15.9-bin.tar.gz`
 * 启动:`sh activemq start`
 * 访问:[http://localhost:8161](http://localhost:8161)
-
-### JMS API调用过程
 
 ### P2P(Queue)消息传递方式
 
@@ -242,11 +240,11 @@ public class TopicConsumer {
 ## 消息的持久化存储
 
 ### 非持久化
-该模式不会讲消息存储到可靠的存储介质中（例如：磁盘，DB），只会存在于内存中，如果`Broker`出现宕机，则消息会丢失
+该模式不会将消息存储到可靠的存储介质中（例如：磁盘，DB），只会存在于内存中，如果`Broker`出现宕机，则消息会丢失
 
 ### 持久化
 该模式会将生产者发送到`Broker`的消息持久化到可靠存储介质中，即使是`Broker`出现宕机，也不会出现消息丢失的情况，但是，由于生产者或者消费者在发送或者确认消息的过程中，
-`Broker`需要将消息从可靠存储介质中保存或者删除，从来带来了IO开销，性能上比非持久化存储方式相对来说较低
+`Broker`需要将消息从可靠存储介质中保存或者删除，从而带来了IO开销，性能上比非持久化存储方式相对来说较低
 
 ## 持久化消息和非持久化消息的发送策略
 
@@ -509,8 +507,8 @@ class TransportFactory {
 ## 消息消费原理分析
 
 消息消费从`ActiveMQMessageConsumer`的`receive`开始，该方法首先检查连接，然后检查是否设置了`Listener`（`ActiveMQ`消费端只允许一种方式接受消息，原因是多种方式消息消费的事务性不好管控），
-然后判断`prefetchSize`和`unconsumeMessages`是否为空，如果为空则向`Broker`发送一个拉取消息的`pull`命令，然后调用`dequeue`方法
-该方法从`unConsumeMessages`中获取一个消息，`unConsumeMessages`是一个未消费消息的通道，该通道的作用的，每次从`Broker`上拉取`prefetchSize`条消息保存到本地，减少了客户端和服务端
+然后判断`prefetchSize`和`unconsumeMessages`是否为空，如果为空则向`Broker`发送一个拉取消息的`pull`命令，然后调用`dequeue`方法，该方法从`unConsumeMessages`中获取一个消息（如果`unConsumeMessages`
+中没有消息，则会阻塞当前线程直到`Broker`push一个消息或者超时释放），`unConsumeMessages`是一个未消费消息的通道，该通道的作用是每次从`Broker`上拉取`prefetchSize`条消息保存到本地，减少了客户端和服务端
 频繁请求造成的网络开销。
 继续往下，会调用`beforeMessageIsConsumed(md);`方法，该方法主要作用是做一些消息消费前的一些准备工作，如果ACK类型不是`DUPS_OK_ACKNOWLEDGE`或者不是队列类型（也就是除了`Topic`类型和`DUPS_OK_ACKNOWLEDGE`）
 所有的消息先放到`deliveredMessages`链表的开头，并且如果是事务类型，则判断`transactedIndividualAck`，如果是true，表示单条消息直接返回ACK，否则，调用`ackLater`批量应答，消费端在消费
@@ -705,11 +703,27 @@ class ActiveMQConnection {
     }
 }
 ```
-如果传入的消息是`MessageDispatch`，则会调用`processMessageDispatch`方法
+如果传入的消息是`MessageDispatch`，则会调用`processMessageDispatch`方法，在该方法中最终会调用`ActiveMQMessageConsumer`中的`dispatch`方法，`unConsumedMessages`的值就是在该方法中`enqueue`的。
 
-## 异步分发流程
+总结：消费者在启动的时候会创建一个线程不断的从客户端和`Broker`的`Socket`连接中读取数据，然后交给`TransportListener`（这里的实现是`ActiveMQConnection`）处理，
+消息的消费其实是从一个未消费的消息通道`unConsumedMessages`里面拿的，拿消息之前会判断当前`unConsumedMessages`中是否存在未消费的消息，如果不存在消息并且`prefetchSize`等于0，
+则向`Broker`发送一条`pullCommand`指令，然后调用`dequeue`方法（该方法会被阻塞知道拿到消息后返回），然后`Broker`会向客户端`push`指定条数（prefetchSize）的消息（这里是异步实现，消息会
+被`Transport`线程读取，然后交给`ActiveMQConnection#onCommand`监听器分发消息，最终会把消息`enqueue`到`unConsumedMessages`中），当`unConsumedMessages`有消息过后，`dequeue`方法解除
+阻塞，返回消息，然后执行消息确认过程。
 
 ## prefetchSize与optimizeAcknowledge
+
+* prefetchSize:消息的批量拉取
+不同的类型的队列，prefetchSize 的默认值也是不一样的，如下：
+    1. 持久化队列和非持久化Queue（队列），prefetchSize默认值为1000；
+    2. 持久化 topic ，prefetchSize 默认值为100；
+    3. 非持久化消息，prefetchSize 默认值为 Short.MAX_VALUE -1
+设置方式
+```
+Destination destination = session.createQueue("myQueue?consumer.prefetchSize=88");
+```
+
+* optimizeAcknowledge:消息的批量确认
 
 ## 消息的确认过程
 
@@ -718,3 +732,7 @@ class ActiveMQConnection {
 ## 死信队列
 
 ## ActiveMQ静态网络配置
+
+## 参考文献
+
+> https://blog.csdn.net/lzb348110175/article/details/100132006
