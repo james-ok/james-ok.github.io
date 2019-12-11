@@ -713,25 +713,84 @@ class ActiveMQConnection {
 
 ## prefetchSize与optimizeAcknowledge
 
-* prefetchSize:消息的批量拉取
+* prefetchSize:窗口机制（消息的批量拉取）
 不同的类型的队列，prefetchSize 的默认值也是不一样的，如下：
     1. 持久化队列和非持久化Queue（队列），prefetchSize默认值为1000；
     2. 持久化 topic ，prefetchSize 默认值为100；
     3. 非持久化消息，prefetchSize 默认值为 Short.MAX_VALUE -1
-设置方式
+    
+配置方式：
 ```
 Destination destination = session.createQueue("myQueue?consumer.prefetchSize=88");
 ```
 
-* optimizeAcknowledge:消息的批量确认
+* optimizeAcknowledge:消息优化确认，优化ACK，只有`optimizeAcknowledge`为true时，`prefetchSize`和`optimizeAcknowledgeTimeout`才有意义。消息的批量确认，也是一种减少网络开销的一种手段，
+如果我们不开启优化ACK，那么`Broker`push一批消息到客户端过后，客户端消费一条消息向`Broker`确认一次，`Broker`向客户端push一条消息，这样达不到批量的效果（假批量），所以一般情况下，这两个
+配置是同事存在的，默认消息消费超过`65%`会发送一次批量确认（也就是1000*.65=650）。
 
-## 消息的确认过程
+配置方式：
+```
+ConnectionFactory connectionFactory= new ActiveMQConnectionFactory("tcp://localhost:61616?jms.optimizeAcknowledge=true&jms.optimizeAcknowledgeTimeOut=10000");
+```
 
 ## 消息的重发机制
+正常情况下，触发消息重发的有两种情况
+* 事务性会话中，没有调用`session.commit`或者调用`session.rollback`
+* 非事务性会话中，没有调用`acknowledge`或者调用`recover`
+
+一个消息被`redelivedred`超过6次，客户端会给`Broker`发送一个`poisonACK`，告诉`Broker`不要再重发消息了，然后`Broker`会将该条消息放入到DLQ（死信队列）中。
 
 ## 死信队列
 
+ActiveMQ中默认的死信队列是`ActiveMQ.DLQ`，没有特殊的的配置，重发超过6次的消息都会被放到该队列中，默认情况下，如果持久消息过期后，也会被放到该死信队列中。
+默认所有队列的死信队列都是`ActiveMQ.DLQ`，不便于管理，可以通过配置来针对某个队列配置特定的私信队列，配置如下：
+```xml
+<destinationPolicy> 
+    <policyMap> 
+        <policyEntries> 
+            <policyEntry topic=">" > 
+                <pendingMessageLimitStrategy> 
+                    <constantPendingMessageLimitStrategy limit="1000"/> 
+                </pendingMessageLimitStrategy> 
+            </policyEntry>  
+            <!-->:表示对所有队列生效，指定队列直接写队列名称--> 
+            <policyEntry queue=">"> 
+                <deadLetterStrategy> 
+                    <!--queuePrefix:设置死信队列前缀--> 
+                    <individualDeadLetterStrategy queuePrefix="DLQ." useQueueForQueueMessages="true" processExpired="false"/> 
+                    <!--是否丢弃过期消息-->
+                    <!--<sharedDeadLetterStrategy processExpired="false" />-->
+                </deadLetterStrategy> 
+            </policyEntry> 
+        </policyEntries> 
+    </policyMap> 
+</destinationPolicy> 
+```
+
+### 死信队列的再次消费
+死信队列也是一个队列，在定位到问题原因过后，可以手动消费死信队列的消息。
+
 ## ActiveMQ静态网络配置
+ActiveMQ支持使用网络配置的方式来达到集群的效果，ActiveMQ中的网络配置方式有两种，静态网络配置和动态网络配置。
+* 静态网络配置，配置方式如下
+
+```xml
+<networkConnectors>
+    <networkConnector uri="static://(tcp://192.168.10.1:61616,tcp://192.168.10.2:61616)" duplex="true"/>
+</networkConnectors>
+```
+
+* 动态网络配置，该方式使用广播协议将其他的`Broker`连接起来，可以自动发现其他的`Broker`节点，这种方式替代了静态网络连接配置方式。
+
+消息回流：从5.6版本开始，ActiveMQ的网络配置方式集群支持消息回流，该功能解决了当`Broker1`上有需要转发的消息未消费时，将消息回流到原来的`Broker`上。需要配置如下：
+```xml
+<policyEntry queue=">" enableAudit="false">
+    <networkBridgeFilterFactory>
+        <conditionalNetworkBridgeFilterFactory replayWhenNoConsumers="true"/>
+    </networkBridgeFilterFactory>
+</policyEntry>
+```
+配置消息回流需要配置`networkConnector`节点的`duplex`的属性为true。
 
 ## 参考文献
 
