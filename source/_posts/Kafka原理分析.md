@@ -140,3 +140,83 @@ kafka中提供两种分区分配策略，分别是Range（范围分区）、Roun
 通过上面的例子，可以看出，消费者C0多消费了一个分区，这时设想一下，如果该消费组中同时订阅了n个Topic，采用范围分区算法，那么消费者C0将比该组中的其他消费者多消费了n个分区。
 
 #### RoundRobin（轮询）
+把所有的Partition和Consumer按照HashCode排序，然后通过轮询算法将各个Partition分配给Consumer。
+例如：现在有一个Topic test，10个分区;一个Consumer Group,三个消费者；
+* 将Partition通过HashCode排序，假如得到`test-5,test-8,test-2,test-4,test-3,test-6,test-7,test-9,test-0,test-1`
+* 将消费者通过HashCode排序，假如是`C2,C0,C1`
+* 最后得到的结果是：
+    * C2消费`test-5,test-4,test-7,test-1`
+    * C0消费`test-8,test-3,test-9`
+    * C1消费`test-2,test-6,test-0`
+虽然这里C2消费者比其他消费者多一个，但是如果该消费组订阅了多个Topic，那么将会从C0开始分配，也就是说，消费组中的所有消费者消费的分区差距不会超过1。
+注意：使用轮询分区分配策略需要满足一下两个条件
+    * 每个主题的消费者实例具有相同数量的流
+    * 每个消费者订阅的主题必须是相同的
+
+### 什么时候会触发分区分配策略？
+以下几种情况会触发分区分配策略（也可称之为Rebalance），分别是：
+* 当有新的消费者加入当前Consumer Group
+* 有消费者离开当前消费组，例如宕机或者主动关闭
+* Topic新增了分区
+
+### 谁来执行分区分配？
+kafka提供一种角色`Coordinator`来执行对消费组Consumer Group的管理，当消费者启动的时候，会向`Broker`确定谁是它们组的Coordinator，之后该组中的所有Consumer都会向Coordinator进行协调通信。
+
+### 如何确定Coordinator角色？
+消费者向kafka集群中任意一个Broker发送一个`GroupCoordinatorRequest`请求，Broker会返回一个负载最小的BrokerID，并且将其设置成为Coordinator。
+
+### Rebalance（重新负载）
+在执行Rebalance之前，需要保证Coordinator是已经确定好了的，整个Rebalance分为两个步骤
+    1. joinGroup:所有Consumer都会想Coordinator发送`JoinGroupRequest`请求，请求中带有`group_id`/`member_id`/`protocol_matedata`等信息，Coordinator会从中选择一个Consumer作为Leader，
+    并且把leader_id、组成员信息members、序列化后的订阅信息protocol_metadata以及generation_id(类似于zookeeper epoch)发送给消费者。
+    2. syncJoin:Leader Consumer在确定好分区分配方案过后，所有消费者向Coordinator发送一个`SyncGroupRequest`请求，当然这里只有Leader Consumer会真正发送分区分配方案，其他的Consumer
+    只是打酱油的，Coordinator在收到Leader Consumer的分区分配方案过后，将其封装成一个`SyncGroupResponse`响应返回给所有的Consumer，所有的Consumer在收到分区分配方案过后，自行消费
+    方案中指定的分区。
+    
+## Offset
+前面讲到每个Topic有多个Partition，每个Partition中的消息都不一样，并且每个Partition中的消息都会存在一个offset值，在同一个Partition中的offset是有序的，即kafka可以保证同一个Partition
+中的消息是有序的，但是这一特性并不跨分区，也即kafka不能保证跨分区的消息的有序性。
+
+### Offset在哪里维护？
+kafka提供一个名为`__consumer_offsets_*`的Topic，该Topic就是来保存每个Consumer Group的消费的每个Partition某一时刻的offset信息，该Topic默认有50个分区，那么，kafka是如何将某个Consumer Group
+保存到具体的那个分区的呢？其实，kafka是通过这样一个算法来决定该Consumer Group应该保存在那个分区的，公式：`Math.abs("group_id".hashCode())%groupMetadataTopicPartitionCount`。
+确定了分区过后，我们可以通过如下命令查看当前Consumer Group的offset信息
+```shell
+sh kafka-simple-consumer-shell.sh --topic __consumer_offsets --partition 35 --broker-list 192.168.3.224:9092 --formatter "kafka.coordinator.group.GroupMetadataManager\$OffsetsMessageFormatter"
+```
+
+## 多个分区在集群中的分配
+一个Topic有多个Partition，那么这么多的Partition是如何在Broker中分布的呢？
+* 将i个Partition和n个Broker排序
+* 将第1个Partition分配到i%n个Broker上
+
+## 消息的存储
+我们都知道在kafka中消息都是以日志文件存储在文件系统中的，由于kafka中一般都存储着海量的数据，所有，kafka中的消息日志分区并不是直接对应一个日志文件，而是对应着一个分区目录，
+命名为`<topic_name>_<partition_id>`，例如一个名为test的Topic，有三个分区，那么在集群Broker的`/tmp/kafka-log`(该目录是一个临时目录，一般线上环境都会更改此目录)中就有三个目录，分别是`test-0`/`test-1`/`test-2`
+
+### 消息的文件存储机制
+我们知道了Partition的存储是指向一个目录的，其实目录并不具备数据存储的能力，那么kafka中的消息是如何存在于Partition中的呢。kafka为了以后消息的清理以及压缩的便利性和处于性能方面的考虑，
+引入一个`LogSegment`的逻辑概念，但实际上消息是以文件的形式存在于Partition目录中的。在一个Partition中可以存在多个`LogSegment`，一个`LogSegment`由一下三个文件组成：
+    1. 00000000000000000000.index:offset索引文件，对应offset和物理位置position
+    2. 00000000000000000000.timeindex:时间索引文件，映射时间戳和offset的对应关系
+    3. 00000000000000000000.log:日志文件，存储Topic消息，包含内容有offset、position、timestamp、消息内容等等
+每个`LogSegment`分段的大小可以通过server.properties中的`log.segment.bytes`属性设置，默认是1GB。
+`LogSegment`命名的规则是由一个最大支持64位long大小的20位数字字符串组成，每个Partition中的第一个`LogSegment`从0开始，后面的`LogSegment`命名为上一个`LogSegment`消息中最后一个offset+1，
+我们可以通过`sh kafka-run-class.sh kafka.tools.DumpLogSegments --files /tmp/kafka-logs/test-0/00000000000000000000.log --print-data-log`命令查看分区0的第一个`LogSegment`。
+
+### LogSegment中index文件和log文件的关联关系
+我们知道每个LogSegment都是由index,timeindex,log三个后缀结尾的文件组成。可以通过以下命令查看索引文件内容：
+```shell
+sh kafka-run-class.sh kafka.tools.DumpLogSegments --files /tmp/kafka-logs/test-0/00000000000000000000.index --print-data-log
+```
+index和log文件的对应关系如下图：
+
+## 通过offset查找Message的原理分析
+
+## 消息的写入性能
+为什么kafka会有这么高的吞吐量，其原因在于kafka在很多地方做了优化，那么在网络传输和磁盘IO上，有很大的优化空间
+* 顺序写入：kafka采用顺序写入的方式将消息持久化到磁盘，避免了常规随机写入数据寻址等一系列操作带来的性能损耗。
+* 零拷贝：一般情况下，我们将文件数据发送到网络上时，需要将文件冲磁盘读取到操作系统内核空间中，然后拷贝到用户空间，最后将数据发送到网卡，通过网络传输，在kafka中，采用零拷贝的方式，直接
+将数据从内核空间发送到网卡通过网络传输，节省了用户空间这一步骤，在性能上有一定的提升。
+    * 在linux系统中使用sendFile实现零拷贝
+    * 在Java中使用FileChannel.transfer实现零拷贝
