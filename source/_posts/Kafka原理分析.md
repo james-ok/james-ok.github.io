@@ -210,8 +210,15 @@ sh kafka-simple-consumer-shell.sh --topic __consumer_offsets --partition 35 --br
 sh kafka-run-class.sh kafka.tools.DumpLogSegments --files /tmp/kafka-logs/test-0/00000000000000000000.index --print-data-log
 ```
 index和log文件的对应关系如下图：
+![KafkaLogSegment](Kafka原理分析/KafkaLogSegment.png)
 
-## 通过offset查找Message的原理分析
+### 通过offset查找Message的原理分析
+通过上一节我们了解到，offset其实是保存的log文件中的简略信息，是log文件中offset和position的跳跃版，也叫稀疏索引，那么消息是如何通过offset查找的呢
+例如：我们需要查找test Topic中offset为88的message，那么kafka会经过一下步骤查找消息
+1. 分过二分查找法确定该消息存在于那个LogSegment中，那么显然这里offset为88的message肯定存在于00000000000000000000的LogSegment中
+2. 同样通过二分查找法找索引文件中小于等于目标消息（offset为88）offset的记录，以上图为例，很显然是{offset:54,position:4190}，从该条记录中可以知道offset为54的消息的position
+为4190
+3. 打开log文件，从position为4190的地方顺序查找知道找到offset为88的message，然后返回。
 
 ## 消息的写入性能
 为什么kafka会有这么高的吞吐量，其原因在于kafka在很多地方做了优化，那么在网络传输和磁盘IO上，有很大的优化空间
@@ -220,3 +227,16 @@ index和log文件的对应关系如下图：
 将数据从内核空间发送到网卡通过网络传输，节省了用户空间这一步骤，在性能上有一定的提升。
     * 在linux系统中使用sendFile实现零拷贝
     * 在Java中使用FileChannel.transfer实现零拷贝
+    
+## 日志清理策略
+kafka日志使用分段存储，一方面方便日志的清理，另一方面能确保单个文件的大小从来提升一定的性能。kafka会起一个后台线程来执行日志的清理工作，kafka的日志清理策略有两种
+* 根据保留时间：当消息在kafka中存在超过指定的时间，就会触发日志清理，默认时间为7天，可以通过在server.properties中的`log.retention.hours`属性指定
+* 根据日志大小：当kafka中消息的大小超过指定大小，就会触发日志清理， 可以通过在server.properties中的`log.retention.bytes`属性指定
+以上两种策略只要满足一种则会触发清理。
+
+## 日志压缩策略
+我们可以开启kafka的日志压缩功能，开启后，kafka会起一个`Cleaner`线程，定时的去压缩日志，kafka压缩日志的原理是，只保留各个key对应最新的value，而所有修改之前的value则被删除。
+类似于数据库中某条数据的更新历史，比如用户1的用户名由张三改为李四再改为王五，那么只保留王五。
+
+## kafka高可用副本机制
+
