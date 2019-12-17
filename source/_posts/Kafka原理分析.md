@@ -239,4 +239,47 @@ kafka日志使用分段存储，一方面方便日志的清理，另一方面能
 类似于数据库中某条数据的更新历史，比如用户1的用户名由张三改为李四再改为王五，那么只保留王五。
 
 ## kafka高可用副本机制
+kafka中每个Topic可以有多个Partition，并且各个Partition会均匀分布在各个Broker中，但是对于Partition来说，Partition本身存在单点问题，也就是说，当一个Topic中的某个Partition不可用
+则代表该Partition中的消息无法被消费，考虑到这一问题，kafka提供了高可用的Partition解决方案，那就是Partition的副本机制。
 
+每个Partition可以有多个副本，并且存在一个leader副本，所有的读写请求都是由leader副本执行，副本集中的其他Partition作为follower副本存在，follower副本的职责只是从leader副本中同步数据
+所以，我们可以理解为，在Partition的副本集中存在一主多从的架构模型。
+
+一般情况下，一个分区的多个副本会均匀分布在各个Broker上，当其中一个Broker宕机或者其中一个Partition不可用时，可以重新选举一个新的leader副本继续对外提供服务，这样就可以保持kafka集群的可用性。
+
+### 副本分配算法
+1. 将N个Broker和i个Partition排序
+2. 将i个Partition分配到(i mod n)个Broker上（这是多个分区在Broker的分配算法，可以参考 多个分区在集群中的分配）
+3. 将i个Partition的j个副本分配到((i + j) mod n)个Broker上
+
+我们可以在zookeeper中查看各个Topic的各个分区的状态信息，通过`get /brokers/topics/test/partitions/0/state`命令可以得到以下信息：
+```shell
+{"controller_epoch":1,"leader":0,"version":1,"leader_epoch":0,"isr":[0]}
+```
+我这里使用的是单机环境，所以只配置有一个副本（也就是没有副本），这里的ISR只有一个节点，从以上信息可以看出，test Topic中的leader节点也是0。
+
+### 副本机制名词解释
+* Leader副本：负责处理客户端的读写操作
+* Follower副本：被动的从Leader副本中同步数据
+* ISR副本集：包含Leader副本和所有和Leader副本保持数据同步的Follower副本
+* LEO：日志末端位移
+* HW：水位值，当HW的值等于LEO的时候，表示Follower副本中的数据和Leader副本中的数据已经完全同步，HW永远不会大于LEO的值。当消费者拉取消息的时候，只能拉取该值以前的消息，HW值以后的消息
+对于消费者来说是不可见的，也就是说HW的值取决于ISR副本集中最小的LEO值。每个replica都有HW，各个副本都维护着自己的HW。一条消息只有被所有的Follower副本从Leader同步过后才会被认为已提交。
+这样有利于避免一条消息还没有来得及同步就宕机，导致消息丢失的情况。当然，我们可以在发送端指定消息的acks模式，该模式在之前讲过。
+
+### 副本协同机制
+所有客户端的读写请求都会由Leader副本处理，Follower只负责从Leader副本中同步数据，当Leader副本所在的Broker出现宕机和不可用时，会从Follower副本中重新选举一个成为Leader。
+写请求首先由Leader副本处理，之后Follower副本同步，这个步骤会有一定的延迟，当这个延迟在预定的阈值范围内则可以容忍，当这个延迟超出了阈值（可能存在的原因有很多，例如：网络，宕机），Leader
+副本就会将这个Follower副本从ISR中踢出去。
+
+
+### ISR
+经过前面的协同机制过后，ISR副本集里面存在的Leader副本和Follower就是 Leader副本和当前可用并且消息量与Leader副本差不多的Follower副本，是整个副本集的一个子集（因为整个副本集可能存在宕机的副本，被踢出了），
+具体来说，ISR中的副本必须满足一下条件：
+* 副本所在的Broker必须与Zookeeper保持连接
+* 副本最后一条消息的offset和Leader副本中最后一条消息的offset差距不能大于执行阈值，该阈值可以通过`replica.lag.time.max.ms`指定
+> replica.lag.time.max.ms:如果该Follower在此时间间隔内没有追上Leader副本中的所有消息，则将该副本从ISR副本集中剔除
+
+### 数据同步过程
+Producer在发送消息到某个Partition时，先通过Zookeeper找到该Partition的Leader副本，Leader首先会将消息写入到Log日志文件中，然后Follower会从Leader中pull消息，Follower保存消息的顺序
+和Leader的顺序一致。Follower在pull消息并且写入Log文件过后，向Leader发送ACK，一旦Leader收到所有Follower的ACk过后，该消息就被认为已经Commit了，最后Leader就会增加HW值并且向Producer发送ACK。
