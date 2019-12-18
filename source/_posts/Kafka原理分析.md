@@ -283,3 +283,48 @@ kafka中每个Topic可以有多个Partition，并且各个Partition会均匀分�
 ### 数据同步过程
 Producer在发送消息到某个Partition时，先通过Zookeeper找到该Partition的Leader副本，Leader首先会将消息写入到Log日志文件中，然后Follower会从Leader中pull消息，Follower保存消息的顺序
 和Leader的顺序一致。Follower在pull消息并且写入Log文件过后，向Leader发送ACK，一旦Leader收到所有Follower的ACk过后，该消息就被认为已经Commit了，最后Leader就会增加HW值并且向Producer发送ACK。
+
+### 副本数据同步机制
+初始状态下，Leader和Follower副本的LEO和HW的值都为0，并且Leader中还保存着remoteLEO(表示所有Follower的LEO，初始值也是0)，Follower会不断的向Leader副本发送fetch请求，假如当前没有任何Producer
+向Leader副本发送消息，则这个请求会被Leader寄存，当超过了指定阈值（通过`replica.fetch.wait.max.ms`设置）还没有Producer发送消息，则该请求会被强制完成。如果在该阈值指定时间内有新的消息，那么 
+该fetch请求会被唤醒，继续执行。这里可以分为两种情况：
+* Follower的fetch请求是在Leader处理了Producer消息过后发送的
+    * Producer发送一条消息，Leader在收到消息过后做以下事情：
+        1. 将消息保存到Log文件中，同时更新自己的LEO值
+        2. 更新自己的HW值，但是由于当前还没有Follower发送fetch请求，那么Leader副本那种的RemoteLEO值任然是0，Leader将自己的LEO和RemoteLEO值进行比较，发现最小值是0，所以HW的值还是0。
+    * Follower第一次fetch消息
+    Leader的处理逻辑是：
+        1. 读取Log消息，更新RemoteLEO值（RemoteLEO值由fetch请求中的offset来决定，由于是Follower第一次发送fetch请求，所有请求的offset值为0）。
+        2. 更新HW值，但是这时自己的LEO和RemoteLEO任然是0，所有HW的值任然为0。
+        3. 将消息内容和当前分区的HW值封装成Response返回给Follower
+    Follower的处理逻辑是：
+        1. 将消息保存到Log文件中，同时更新LEO值
+        2. 更新自己的HW值，将本地的LEO和Leader返回的HW进行比较，取最小值作为自己的HW值，此时最小值为0，所以这时的HW值为0
+    * Follower第二次fetch消息
+    Leader的处理逻辑是：
+        1. 读取Log消息，更新RemoteLEO值（这时fetch请求的offset为1）。
+        2. 更新HW值，这时Leader的LEO和RemoteLEO都是1，所有HW的值为1。
+        3. 将消息内容和当前分区的HW值封装成Response返回给Follower，这个时候么有消息内容，所以只返回HW值。
+    Follower的处理逻辑是：
+        1. 如果有消息则保存消息到Log文件中，如果没有则不执行该操作，同时更新LEO值
+        2. 更新自己的HW值，将本地的LEO和Leader返回的HW进行比较，取最小值作为自己的HW值，此时两个值都为1，所以这时的HW值为1
+到目前为止，数据同步完成。
+* Leader还没有处理Producer消息时Follower发送了fetch请求：
+当Follower发送fetch请求是，Leader中没有Producer发送消息时，这个fetch请求会被阻塞，当在指定阈值超时时间范围内有新的消息发送过来，Leader处理完成过后，该fetch请求就会被唤醒，继续执行
+执行的逻辑和上面一样。
+
+### kafka中是如何处理所有的Replica不工作的情况
+在一个分区的ISR中至少有一个副本可用时，kafka就可以保证已经Commit的消息不被丢失，但是当ISR中所有的副本都不可用时，就无法保证了，这时会有两种处理办法
+* 等待ISR中任意一个Replica活过来，并且将其设置为Leader
+* 等待任意一个Replica活过来，不过是不是存在于ISR副本集中，并且将其设置为Leader
+此时就需要在可用性和一致性上做出选择
+如果选择第一种方式，那么可能等待的时间较长，就意味着不可用的时间会变长；如果选择第二种方式，虽然等待的时间或许没有第一种那么长，但是因为不存在与ISR中的副本数据同步的延迟较大，所以数据
+的一致性就会体现出来。
+
+### ISR设计所解决的问题
+在分布式系统中，冗余备份是很常见的一种高可用手段，但是也会带来一些性能上的损耗，例如：
+在kafka中，副本中Leader和Follower副本如果采用同步的方式复制消息，那么所有Follower副本的消息都完成复制才算完成了数据的同步，那么如果个别Follower网络延迟较长或者性能本身不太好导致整个集群出现性能瓶颈甚至阻塞；
+如果采用异步的方式复制消息，Leader收到消息过后则返回成功，则认为该消息已被提交，Follower异步的从Leader复制消息，如果此时Follower副本复制消息比较慢，此时Leader突然宕机，重新选举Leader
+过后，Follower副本和Leader副本的消息存在差距，那么这个差距的消息就会被丢失。
+所以Kafka权衡了两种方式的有点，采用ISR副本集来确保各个Follower副本和Leader副本的延迟在阈值范围内，如果超出阈值范围，则将该Follower剔除，这个时候就可以采用同步的方式来复制消息，当Leader
+处理的Producer发送的消息过后，kafka只需要等待ISR副本集中的所有Follower同步完成即可认为消息被提交。
