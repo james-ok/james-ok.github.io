@@ -22,14 +22,14 @@ Redis可以看成是NoSQL数据库，也可以看成是缓存中间件，Redis�
 ## Redis数据类型
 Redis支持五种数据类型，分别是String、List、Hash、Set、SortSet，五种类型的特性如下：
 
-### String(字符串)：
+### String(字符串)
 字符串是Redis中最基本的数据类型，它能存储任何字符数据，例如JSON，Base64编码的图片等，String最大支持存储512M的字符数据。
 
 #### 内部数据结构
 String支持三种数据类型，分别是int、浮点数据和字符数据，int数据类型使用int存储，浮点数据和字符数据使用SDS（Simple Dynamic String）存储，SDS是在C的标准字符串结构上作了封装，Redis3.2
 有五种sdshdr类型，目的是根据存储的字符串长度选择不同的sdshdr，不同的sdshdr占用的内存大小各有不同，这样就达到了节省内存开销的目的。
 
-### List(列表)：
+### List(列表)
 List列表是一个有序的字符串列表，由于List底层采用的是双向链表的数据结构，所以不管List列表中的数据有多大，向列表的两端存取数据都是很快的，常用操作也是向列表的两端存取数据。
 
 #### 内部数据结构
@@ -38,13 +38,29 @@ List列表是一个有序的字符串列表，由于List底层采用的是双向
 在3.2之后，Redis在数据存储结构上做了优化，采用QuickList数据结构，QuickList其实是LinkedList和ZipList数据结构的整合，QuickList任然是一个LinkedList，只是每个元素都是一个ZipList，
 每个元素都能存储多个数据元素；即QuickList是多个ZipList组成的LinkedList
 
-### Hash(可以认为是Java中的Map)：
+### Hash(可以认为是Java中的Map)
 Hash可以看成是Java中的Map，由一个Sting类型的key和多个String类型的field和value组成。适合存储对象。
 
 #### 内部数据结构
 Hash底层数据结构可以使用ZipList和HashTable，当Hash中field和value的字符串长度都小于64字节，一个Hash的field和value的个数小于512个时，使用ZipList数据结构存储
 
-### Set(集合)：
-Set存储一个无序不能重复的元素集合，最多可以存储232-1个元素
+### Set(集合)
+Set存储一个无序不能重复的元素集合，最多可以存储232-1个元素，集合和列表的最大区别就是唯一性和有序性。
 
-### SortSet(有序集合)：
+#### 内部数据结构
+Set底层数据结构有IntSet和HashTable，当所有元素是int类型时，这使用IntSet，否则使用HashTable（只用Key，Value为null）
+
+### SortSet(有序集合)
+SortSet和Set的区别就是增加了排序功能，在集合的基础上，有序集合为集合中的每个元素绑定了一个score（分数）。有序集合中的元素和集合一样是唯一的，但是元素的score是可以重复的。
+我们可以通过score进行排序，查找，删除等操作。
+
+#### 内部数据结构
+SortSet采用ZipList或者SkipList+HashTable数据结构存储数据。
+
+## Redis过期时间
+Redis中可以为一个key设置一个过期时间，当设置了过期时间的key到期过后会被删除。
+在Redis中，为某个key设置过期时间有三种方式：
+1. `EXPIRE key seconds`:为key设置过期时间，单位为妙
+2. `PEXPIRE key millis`:为key设置过期时间，单位为毫秒
+3. `setex key seconds value`:该方式为字符串独有，设置key的过期时间，单位为秒
+查看一个key的有效期
