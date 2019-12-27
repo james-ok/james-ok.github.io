@@ -132,6 +132,7 @@ AOF方式的数据恢复会一个一个将AOF文件中的命令在Redis服务器
 来解决Redis在单线程下的性能问题。
 
 ### 多路复用
+//TODO
 
 ## 在Redis中使用Lua脚本
 在客户端使用Redis会面临很多问题，例如：原子性问题、性能问题等
@@ -217,6 +218,7 @@ sentinel failover-timeout mymaster 15000                # 表示如果15秒后,m
 启动哨兵的两种方式`./redis-server.sh /path/sentinel.conf --sentinel`/`./redis-sentinel /path/sentinel.conf`
 
 ### Redis-Cluster
+//TODO
 
 ## Redis缓存及数据一致性的问题
 Redis缓存和数据库在事务上是不能达到统一的，那么我们如何保证最终一致性。
