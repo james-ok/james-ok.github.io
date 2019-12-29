@@ -146,3 +146,33 @@ Nginx作为我们系统的入口，所以Nginx本身的可用性也是我们首�
 
 ## OpenResty
 OpenResty是基于Nginx内核新增了Lua支持的扩展，便于在Nginx的基础上编写Lua脚本达到用户自定义的功能实现，使之更加健壮。
+
+### 安装
+OpenResty是在Nginx上做的扩展，所以实际上也是一个Nginx，安装方式和Nginx一致。
+
+### Nginx执行阶段和OpenResty
+Nginx把一次请求划分了11个阶段，各个阶段按照顺序执行，顺序是post-read、server-rewrite、find-config、rewrite、post-rewrite、preaccess、access、post-access、try-files、content、log，下面来一一介绍一下这些
+阶段都是干啥用的，并且在什么时候被调用。
+* post-read：Nginx读取并解析完请求头过后立即执行该阶段。
+* server-rewrite：URI和Location匹配前，修改URI，可用于重定向，该阶段执行位于Server语句块内，Location块外
+* find-config：根据URI匹配Location，该阶段可能会执行多次
+* rewrite：匹配到Location过后的URI重写，该阶段可能执行多次
+* post-rewrite：检查上个阶段是否有URI重写，根据重写的URI跳转到合适的阶段
+* preaccess：访问权限控制的前一阶段，一般用于访问控制
+* access：访问权限控制阶段，判断该请求是否允许进入Nginx服务器
+* post-access：权限控制的后一阶段，根据前一阶段的执行结果进行相应的处理
+* try-files：为访问静态文件资源设定，如果没有配置try-files指令，该阶段会被跳过
+* content：处理HTTP请求内容的阶段，该阶段产生响应，并返回到客户端
+* log：日志记录阶段，记录请求访问日志
+OpenResty也有如下阶段
+* init_by_lua：Master进程加载conf配置文件时执行该阶段，一般用来注册全局变量和预加载Lua库
+* init_worker_by_lua：各个worker进程启动时会执行该阶段，可以用来做健康检查
+* ssl_certificate_by_lua：在Nginx和下游服务器进行SSL握手之前执行该阶段
+* set_by_lua: 流程分之处理判断变量初始化
+* rewrite_by_lua: 转发、重定向、缓存等功能(例如特定请求代理到外网)
+* access_by_lua: IP准入、接口权限等情况集中处理(例如配合iptable完成简单防火墙)
+* content_by_lua: 内容生成
+* balancer_by_lua：实现动态负载均衡
+* header_filter_by_lua: 应答HTTP过滤处理(例如添加头部信息)
+* body_filter_by_lua: 应答BODY过滤处理(例如完成应答内容统一成大写)
+* log_by_lua: 回话完成后本地异步完成日志记录(日志可以记录在本地，还可以同步到其他机器)
