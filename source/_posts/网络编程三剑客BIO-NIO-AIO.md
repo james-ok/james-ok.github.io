@@ -36,6 +36,300 @@ Java中IO体系大体如下图：
 
 ## BIO
 
+### 示例
+Server
+```java
+//Ignore package import
+public class ChatServer {
+    private static final int SERVER_PORT = 8888;
+    public static final String QUIT = "quit";
+    private ServerSocket serverSocket;
+    private Map<Integer, Writer> clientsMap;
+    //线程池
+    private ExecutorService executorService = Executors.newFixedThreadPool(2);
+    public ChatServer(){
+        clientsMap = new HashMap<>();
+    }
+    public void addClient(Socket socket) throws IOException {
+        if(socket!=null){
+            if(!clientsMap.containsKey(socket.getPort())){
+                clientsMap.put(socket.getPort(),new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())));
+            }
+        }
+    }
+    public void removeClient(Integer key){
+        if(key!=null){
+            //关闭流
+            Writer writer = clientsMap.get(key);
+            close(writer);
+            //移除客户端
+            clientsMap.remove(key);
+        }
+    }
+    private void close(Closeable closeable){
+        if(closeable!=null){
+            try {
+                closeable.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+    public void forwordMessage(Writer writer,String message) throws IOException {
+        writer.write(message);
+        writer.flush();
+    }
+    public void start(){
+        try {
+            serverSocket = new ServerSocket(SERVER_PORT);
+            while (true) {
+                //接受客户端连接
+                Socket socket = serverSocket.accept();
+                //使用线程池的方式
+                executorService.execute(new ProcessHandler(this,socket));
+                //创建一个新的线程
+                //new Thread(new ProcessHandler(this,socket)).start();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    public Map<Integer, Writer> getClientsMap() {
+        return clientsMap;
+    }
+    public static void main(String[] args) {
+        ChatServer chatServer = new ChatServer();
+        chatServer.start();
+    }
+}
+```
+Client
+```java
+//Ignore package import
+public class ChatClient {
+    private static final int SERVER_PORT = 8888;
+    private static final String LOCAL_HOST = "127.0.0.1";
+    public static final String QUIT = "quit";
+    private Socket socket;
+    private void close(Closeable closeable){
+        if(closeable!=null){
+            try {
+                closeable.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+    public void connect(){
+        BufferedReader consoleReader = null;
+        try {
+            //创建连接
+            socket = new Socket(LOCAL_HOST,SERVER_PORT);
+            //创建线程用于处理用户发送消息
+            BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            new Thread(new UserInputHandler(socket)).start();
+            //主线程读取其他用户发送的消息
+            while (true) {
+                String msg = reader.readLine();
+                if (socket.isInputShutdown() || msg == null){
+                    break;
+                }
+                System.out.println(msg);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            close(socket);
+            close(consoleReader);
+        }
+    }
+    public static void main(String[] args) {
+        ChatClient chatClient = new ChatClient();
+        chatClient.connect();
+    }
+}
+```
+客户端用户输入线程
+```java
+//Ignore package import
+public class UserInputHandler implements Runnable {
+    private Socket socket;
+    public UserInputHandler(Socket socket) {
+        this.socket = socket;
+    }
+    @Override
+    public void run() {
+        try {
+            //等待用户输入
+            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+            BufferedReader consoleReader = new BufferedReader(new InputStreamReader(System.in));
+            while (true) {
+                String msg = consoleReader.readLine();
+                writer.write(msg + "\n");
+                writer.flush();
+                if(ChatClient.QUIT.equals(msg)){
+                    break;
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+}
+```
+
 ## NIO
 
 ## AIO
+### 示例
+Server
+```java
+//Ignore package import
+public class ChatServer {
+    public static final int BUFFER_LENGTH = 1024;
+    private static final int DEFAULT_PORT = 8888;
+    private AsynchronousServerSocketChannel asynchronousServerSocketChannel;
+    private CountDownLatch countDownLatch = new CountDownLatch(1);
+    public void start(){
+        try {
+            //初始化
+            asynchronousServerSocketChannel = AsynchronousServerSocketChannel.open();
+            //绑定监听端口
+            asynchronousServerSocketChannel.bind(new InetSocketAddress(DEFAULT_PORT));
+            //接受客户端请求
+            asynchronousServerSocketChannel.accept(null,new AcceptHandler(asynchronousServerSocketChannel));
+            //阻塞主线程
+            countDownLatch.await();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } finally {
+            close(asynchronousServerSocketChannel);
+        }
+    }
+    private void close(Closeable closeable) {
+        try {
+            if(closeable!=null){
+                closeable.close();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    public static void main(String[] args) {
+        ChatServer chatServer = new ChatServer();
+        chatServer.start();
+    }
+}
+```
+接受用户请求Handler
+```java
+//Ignore package import
+public class AcceptHandler implements CompletionHandler<AsynchronousSocketChannel,Object> {
+    private AsynchronousServerSocketChannel asynchronousServerSocketChannel;
+    public AcceptHandler(AsynchronousServerSocketChannel asynchronousServerSocketChannel) {
+        this.asynchronousServerSocketChannel = asynchronousServerSocketChannel;
+    }
+    @Override
+    public void completed(AsynchronousSocketChannel asynchronousSocketChannel, Object attachment) {
+        //继续接受客户端请求
+        asynchronousServerSocketChannel.accept(null,this);
+        //读取数据
+        ByteBuffer buffer = ByteBuffer.allocate(ChatServer.BUFFER_LENGTH);
+        buffer.clear();
+        Map<String,Object> info = new HashMap<>();
+        info.put("type","read");
+        info.put("buffer",buffer);
+        asynchronousSocketChannel.read(buffer,info,new ClientHandler(asynchronousSocketChannel));
+    }
+    @Override
+    public void failed(Throwable exc, Object attachment) {
+        exc.printStackTrace();
+    }
+}
+```
+处理读写请求Handler
+```java
+//Ignore package import
+public class ClientHandler implements CompletionHandler<Integer,Object> {
+    private AsynchronousSocketChannel asynchronousSocketChannel;
+    public ClientHandler(AsynchronousSocketChannel asynchronousSocketChannel) {
+        this.asynchronousSocketChannel = asynchronousSocketChannel;
+    }
+    @Override
+    public void completed(Integer result, Object attachment) {
+        Map<String,Object> info = (Map<String, Object>) attachment;
+        String type = (String) info.get("type");
+        if("read".equals(type)){
+            ByteBuffer buffer = (ByteBuffer) info.get("buffer");
+            buffer.flip();
+            //回写到客户端
+            info.put("type","write");
+            asynchronousSocketChannel.write(buffer,info,this);
+        } else if("write".equals(type)){
+            ByteBuffer buffer = ByteBuffer.allocate(ChatServer.BUFFER_LENGTH);
+            info.put("type","read");
+            info.put("buffer",buffer);
+            asynchronousSocketChannel.read(buffer,info,this);
+        }
+    }
+    @Override
+    public void failed(Throwable exc, Object attachment) {
+        exc.printStackTrace();
+    }
+}
+```
+客户端
+```java
+//Ignore package import
+public class ChatClient {
+    public static final int BUFFER_LENGTH = 1024;
+    public static final String DEFAULT_HOST = "127.0.0.1";
+    public static final int DEFAULT_PORT = 8888;
+    private AsynchronousSocketChannel asynchronousSocketChannel;
+    public void connect(){
+        try {
+            asynchronousSocketChannel = AsynchronousSocketChannel.open();
+            Future<Void> connect = asynchronousSocketChannel.connect(new InetSocketAddress(DEFAULT_HOST, DEFAULT_PORT));
+            //等待连接返回
+            connect.get();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+            while (true) {
+                String line = reader.readLine();
+                ByteBuffer buffer = ByteBuffer.allocate(BUFFER_LENGTH);
+                buffer.put(line.getBytes());
+                buffer.flip();
+                Future<Integer> write = asynchronousSocketChannel.write(buffer);
+                write.get();
+                buffer.clear();
+                Future<Integer> read = asynchronousSocketChannel.read(buffer);
+                read.get();
+                buffer.flip();
+                System.out.println(new String(buffer.array()));
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        } finally {
+            close(asynchronousSocketChannel);
+        }
+    }
+    private void close(Closeable closeable) {
+        try {
+            if(closeable!=null){
+                closeable.close();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    public static void main(String[] args) {
+        ChatClient chatClient = new ChatClient();
+        chatClient.connect();
+    }
+}
+```
