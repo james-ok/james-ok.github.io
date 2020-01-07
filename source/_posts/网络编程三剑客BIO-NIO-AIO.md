@@ -180,7 +180,305 @@ public class UserInputHandler implements Runnable {
 
 ## NIO
 
+### 示例
+Server
+```java
+//Ignore package import
+public class ChatServer {
+    private static final String QUIT = "quit";
+    private static final int DEFAULT_SERVER_PORT = 8888;
+    private ServerSocketChannel serverSocketChannel;
+    private Selector selector;
+    private static final int BUFFER_LENGTH = 1024;
+    private ByteBuffer rbuf = ByteBuffer.allocate(BUFFER_LENGTH);
+    private ByteBuffer wbuf = ByteBuffer.allocate(BUFFER_LENGTH);
+    private Charset charset = Charset.forName("UTF-8");
+    public void start(){
+        try {
+            //初始化
+            serverSocketChannel = ServerSocketChannel.open();
+            //配置非阻塞channel
+            serverSocketChannel.configureBlocking(false);
+            //绑定端口
+            serverSocketChannel.socket().bind(new InetSocketAddress(DEFAULT_SERVER_PORT));
+
+            //初始化Selector
+            selector = Selector.open();
+            //注册
+            serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
+            System.out.println("启动服务器， 监听端口：" + DEFAULT_SERVER_PORT + "...");
+            //处理请求
+            while (true) {
+                //该方法会阻塞，只到有新的时间产生
+                selector.select();
+                //拿到当前selector中所有到达的事件
+                Set<SelectionKey> selectionKeys = selector.selectedKeys();
+                for (SelectionKey key : selectionKeys) {
+                    //处理
+                    handlers(key);
+                }
+                selectionKeys.clear();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            close();
+        }
+    }
+    /**
+     * 处理客户端连接和读取客户端事件
+     * @param key
+     * @throws IOException
+     */
+    private void handlers(SelectionKey key) throws IOException {
+        if(key.isAcceptable()){
+            //在Accept事件中拿到客户端channel，然后将其注册到selector中
+            ServerSocketChannel channel = (ServerSocketChannel) key.channel();
+            SocketChannel socketChannel = channel.accept();
+            socketChannel.configureBlocking(false);
+            //注册
+            socketChannel.register(selector,SelectionKey.OP_READ);
+            System.out.println(getClientName(socketChannel) + "已连接");
+        } else if (key.isReadable()) {
+            SocketChannel channel = (SocketChannel)key.channel();
+            //读取客户端消息
+            String msg = readMsg(channel);
+            if(msg.isEmpty()){
+                key.cancel();
+                selector.wakeup();
+            } else {
+                System.out.println(getClientName(channel) + ":" + msg);
+                //转发客户端的消息
+                forwardMsg(channel,msg);
+                if(isQuit(msg)){
+                    key.cancel();
+                    selector.wakeup();
+                    System.out.println(getClientName(channel) + "已断开");
+                }
+            }
+        }
+    }
+    private String getClientName(SocketChannel client) {
+        return "客户端[" + client.socket().getPort() + "]";
+    }
+    /**
+     * 转发消息
+     * @param socketChannel
+     * @param msg
+     * @throws IOException
+     */
+    private void forwardMsg(SocketChannel socketChannel, String msg) throws IOException {
+        Set<SelectionKey> keys = selector.keys();
+        for (SelectionKey key : keys) {
+            Channel channel = key.channel();
+            if (channel instanceof ServerSocketChannel || channel.equals(socketChannel)) {
+                continue;
+            } else {
+                SocketChannel clientChannel = (SocketChannel) channel;
+                wbuf.clear();
+                wbuf.put(charset.encode(getClientName(socketChannel) + ":" + msg));
+                wbuf.flip();
+                while (wbuf.hasRemaining()) {
+                    clientChannel.write(wbuf);
+                }
+            }
+        }
+    }
+    /**
+     * 读取消息
+     * @param channel
+     * @return
+     * @throws IOException
+     */
+    private String readMsg(SocketChannel channel) throws IOException {
+        rbuf.clear();
+        while (channel.read(rbuf)>0);
+        rbuf.flip();
+        return String.valueOf(charset.decode(rbuf));
+    }
+    /**
+     * 判断客户端是否退出
+     * @param msg
+     * @return
+     */
+    public boolean isQuit(String msg){
+        return QUIT.equals(msg);
+    }
+    /**
+     * 关闭
+     */
+    private void close(){
+        try {
+            if (selector!=null) {
+                selector.close();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    public static void main(String[] args) {
+        ChatServer chatServer = new ChatServer();
+        chatServer.start();
+    }
+}
+```
+Client
+```java
+//Ignore package import
+public class ChatClient {
+
+    private static final String QUIT = "quit";
+    private static final String DEFAULT_SERVER_HOST = "127.0.0.1";
+    private static final int DEFAULT_SERVER_PORT = 8888;
+    private SocketChannel socketChannel;
+    private Selector selector;
+    private static final int BUFFER_LENGTH = 1024;
+    private ByteBuffer rbuf = ByteBuffer.allocate(BUFFER_LENGTH);
+    private ByteBuffer wbuf = ByteBuffer.allocate(BUFFER_LENGTH);
+    private Charset charset = Charset.forName("UTF-8");
+    /**
+     * 建立连接
+     */
+    private void connect(){
+        try {
+            //初始化
+            socketChannel = SocketChannel.open();
+            socketChannel.configureBlocking(false);
+
+            //初始化Selector
+            selector = Selector.open();
+            //注册
+            socketChannel.register(selector, SelectionKey.OP_CONNECT);
+            socketChannel.connect(new InetSocketAddress(DEFAULT_SERVER_HOST,DEFAULT_SERVER_PORT));
+            while (true) {
+                selector.select();
+                //如果客户端关闭，则跳出循环
+                if (!selector.isOpen()){
+                    break;
+                }
+                Set<SelectionKey> selectionKeys = selector.selectedKeys();
+                for (SelectionKey key : selectionKeys) {
+                    handlers(key);
+                }
+                selectionKeys.clear();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            close();
+        }
+    }
+    /**
+     * 处理客户端连接和读取服务器端数据
+     * @param key
+     * @throws IOException
+     */
+    private void handlers(SelectionKey key) throws IOException {
+        if(key.isConnectable()){
+            SocketChannel channel = (SocketChannel)key.channel();
+            if (channel.isConnectionPending()){
+                channel.finishConnect();
+                //创建一个线程去阻塞用户输入
+                new Thread(new UserInputHandler(this)).start();
+            }
+            channel.register(selector,SelectionKey.OP_READ);
+        } else if(key.isReadable()) {
+            SocketChannel channel = (SocketChannel)key.channel();
+            //读取服务器数据
+            String msg = receive(channel);
+            if(msg.isEmpty()){
+                close();
+            } else {
+                System.out.println(msg);
+            }
+        }
+    }
+    /**
+     * 读取服务器消息
+     * @param channel
+     * @return
+     * @throws IOException
+     */
+    private String receive(SocketChannel channel) throws IOException {
+        rbuf.clear();
+        while (channel.read(rbuf)>0);
+        rbuf.flip();
+        return String.valueOf(charset.decode(rbuf));
+    }
+    /**
+     * 判断客户端是否退出
+     * @param msg
+     * @return
+     */
+    public boolean isQuit(String msg){
+        return QUIT.equals(msg);
+    }
+    /**
+     * 关闭资源
+     */
+    public void close(){
+        try {
+            if (selector!=null) {
+                selector.close();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    public static void main(String[] args) {
+        ChatClient chatClient = new ChatClient();
+        chatClient.connect();
+    }
+    /**
+     * 发送消息
+     * @param msg
+     * @throws IOException
+     */
+    public void send(String msg) throws IOException {
+        if (msg.isEmpty()) {
+            return;
+        }
+        wbuf.clear();
+        wbuf.put(charset.encode(msg));
+        wbuf.flip();
+        while (wbuf.hasRemaining()) {
+            socketChannel.write(wbuf);
+        }
+        if (isQuit(msg)){
+            close();
+        }
+    }
+}
+```
+UserInputHandler
+```java
+//Ignore package import
+public class UserInputHandler implements Runnable {
+    private ChatClient chatClient;
+    public UserInputHandler(ChatClient chatClient){
+        this.chatClient = chatClient;
+    }
+    @Override
+    public void run() {
+        try {
+            BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+            while (true) {
+                String line = reader.readLine();
+                chatClient.send(line);
+                //判断是否退出客户端
+                if(chatClient.isQuit(line)){
+                    break;
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+}
+```
+
 ## AIO
+
 ### 示例
 Server
 ```java
