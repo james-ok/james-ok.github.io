@@ -1,8 +1,13 @@
 ---
 title: 网络编程三剑客BIO/NIO/AIO
 date: 2020-01-01 14:20:57
+categories: 网络编程
 tags:
+- BIO
+- NIO
+- AIO
 ---
+
 日常工作中离不开IO，但由于Java中IO包下非常繁杂，很多同学认为IO学起来很难，其实只是没有理清IO包下各个类之间的关系
 
 ## Java IO
