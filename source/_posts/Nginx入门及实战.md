@@ -15,9 +15,39 @@ tags:
 ## Nginx安装
 * [下载](http://nginx.org/download/nginx-1.17.7.tar.gz)
 * 解压：`tar -zxvf nginx-1.17.7.tar.gz`
-* `./configure {--prefix} {--with-xxx-module}`:--prefix是可选的，表示指定编译安装目录。以及安装其他模块使用--with-xxx-module
+* `./configure {--prefix} {--with-xxx-module}`:--prefix是可选的，表示指定编译安装目录，默认/usr/local/nginx。以及安装其他模块使用--with-xxx-module
 * `make && make install`
 * 启动和停止：`./nginx`/`./nginx -s stop`
+
+### 安装问题解决
+* 问题一
+```shell
+[root@localhost nginx-1.16.1]# ./configure 
+checking for OS
+ + Linux 3.10.0-514.el7.x86_64 x86_64
+checking for C compiler ... not found
+
+./configure: error: C compiler cc is not found
+```
+需要安装gcc，`yum -y install gcc`
+
+* 问题二
+```shell
+./configure: error: the HTTP rewrite module requires the PCRE library.
+You can either disable the module by using --without-http_rewrite_module
+option, or install the PCRE library into the system, or build the PCRE library
+statically from the source with nginx by using --with-pcre=<path> option.
+```
+安装`yum install pcre-devel`
+
+* 问题三
+```shell
+./configure: error: the HTTP gzip module requires the zlib library.
+You can either disable the module by using --without-http_gzip_module
+option, or install the zlib library into the system, or build the zlib library
+statically from the source with nginx by using --with-zlib=<path> option.
+```
+安装`yum install zlib-devel`
 
 ## 反向代理
 Nginx反向代理既可以是IP+PORT也可以是域名，只需要配置proxy_pass就可以实现反向代理。配置如下：

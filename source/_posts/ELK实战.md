@@ -47,11 +47,23 @@ ERROR: [1] bootstrap checks failed
 1. 修改配置文件`vim config/elasticsearch.yml`，添加内容`cluster.initial_master_nodes: ["node-1"]`
 
 ## Kibana安装
-1. 将Kibana分配给新建的用户：`chown -R elk:elk ./kibana`
-2. 修改配置如下
+* [下载](https://artifacts.elastic.co/downloads/kibana/kibana-7.5.1-linux-x86_64.tar.gz) 
+* 解压：`tar -zxvf kibana-7.5.1-linux-x86_64.tar.gz`
+* 将Kibana分配给新建的用户：`chown -R elk:elk ./kibana-7.5.1-linux-x86_64`
+* 修改配置如下
 ```yaml
 server.port: 5601
 server.host: "192.168.1.6"
 elasticsearch.hosts: ["http://192.168.1.6:9200"]
 i18n.locale: "zh-CN"
 ```
+
+## LogStash安装
+* [下载](https://artifacts.elastic.co/downloads/logstash/logstash-7.5.1.tar.gz) 
+* 解压：`tar -zxvf LogStash-7.5.1.tar.gz`
+* 将LogStash分配给新建的用户：`chown -R elk:elk ./LogStash-7.5.1`
+* 创建LogStash配置文件
+* 启动LogStash：`sh sh/logstash -f config/logstash.conf`
+
+### LogStash配置
+LogStash可以简单分为三个部分，分别是input、filter、output。input用于输入数据来源，filter用于处理数据，output用于数据数据，一般将output输出到ES中。
