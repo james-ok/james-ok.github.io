@@ -1,0 +1,1318 @@
+<!DOCTYPE HTML>
+<html lang="zh-CN">
+
+
+<head><meta name="generator" content="Hexo 3.9.0">
+    <meta charset="utf-8">
+    <meta name="keywords" content="Dubbo源码分析, james-ok,github">
+    <meta name="description" content="Dubbo SPIDubbo SPI使用以及规范
+创建接口并且加上@SPI注解表示该接口是一个Dubbo扩展点，将该扩展点打成一个jar包发布@SPI
+public interface IHelloService {
+  String sa">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="renderer" content="webkit|ie-stand|ie-comp">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Dubbo源码分析 | James</title>
+    <link rel="icon" type="image/png" href="/favicon.png">
+
+    <link rel="stylesheet" type="text/css" href="/libs/awesome/css/font-awesome.min.css">
+    <link rel="stylesheet" type="text/css" href="/libs/materialize/css/materialize.min.css">
+    <link rel="stylesheet" type="text/css" href="/libs/aos/aos.css">
+    <link rel="stylesheet" type="text/css" href="/libs/animate/animate.min.css">
+    <link rel="stylesheet" type="text/css" href="/libs/lightGallery/css/lightgallery.min.css">
+    <link rel="stylesheet" type="text/css" href="/css/matery.css">
+    <link rel="stylesheet" type="text/css" href="/css/my.css">
+    <style type="text/css">
+        
+        code[class*="language-"], pre[class*="language-"] {
+            white-space: pre !important;
+        }
+        
+    </style>
+
+    <script src="/libs/jquery/jquery-2.2.0.min.js"></script>
+<link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css">
+<link rel="stylesheet" href="/css/prism-line-numbers.css" type="text/css"></head>
+
+
+<body>
+
+<header class="navbar-fixed">
+    <nav id="headNav" class="bg-color nav-transparent">
+        <div id="navContainer" class="container">
+            <div class="nav-wrapper">
+                <div class="brand-logo">
+                    <a href="/" class="waves-effect waves-light">
+                        
+                        <img src="/medias/logo.png" class="logo-img hide-on-small-only">
+                        
+                        <span class="logo-span">James</span>
+                    </a>
+                </div>
+                
+
+<a href="#" data-activates="mobile-nav" class="button-collapse"><i class="fa fa-navicon"></i></a>
+<ul class="right">
+    
+    <li class="hide-on-med-and-down">
+        <a href="/" class="waves-effect waves-light">
+            
+            <i class="fa fa-home"></i>
+            
+            <span>首页</span>
+        </a>
+    </li>
+    
+    <li class="hide-on-med-and-down">
+        <a href="/tags" class="waves-effect waves-light">
+            
+            <i class="fa fa-tags"></i>
+            
+            <span>标签</span>
+        </a>
+    </li>
+    
+    <li class="hide-on-med-and-down">
+        <a href="/categories" class="waves-effect waves-light">
+            
+            <i class="fa fa-bookmark"></i>
+            
+            <span>分类</span>
+        </a>
+    </li>
+    
+    <li class="hide-on-med-and-down">
+        <a href="/archives" class="waves-effect waves-light">
+            
+            <i class="fa fa-archive"></i>
+            
+            <span>归档</span>
+        </a>
+    </li>
+    
+    <li class="hide-on-med-and-down">
+        <a href="/about" class="waves-effect waves-light">
+            
+            <i class="fa fa-user-circle-o"></i>
+            
+            <span>关于</span>
+        </a>
+    </li>
+    
+    <li class="hide-on-med-and-down">
+        <a href="/friends" class="waves-effect waves-light">
+            
+            <i class="fa fa-address-book"></i>
+            
+            <span>友情链接</span>
+        </a>
+    </li>
+    
+    <li>
+        <a id="toggleSearch" class="waves-effect waves-light">
+            <i id="searchIcon" class="mdi-action-search" title="搜索"></i>
+        </a>
+    </li>
+
+</ul>
+
+<div class="side-nav" id="mobile-nav">
+
+    <div class="mobile-head bg-color">
+        
+        <img src="/medias/logo.png" class="logo-img circle responsive-img">
+        
+        <div class="logo-name">James</div>
+        <div class="logo-desc">
+            
+            人生苦短，若虚度年华，则短暂的人生就太长了。 —— 莎士比亚
+            
+        </div>
+    </div>
+
+    
+
+    <ul class="menu-list mobile-menu-list">
+        
+        <li>
+            <a href="/" class="waves-effect waves-light">
+                
+                <i class="fa fa-fw fa-home"></i>
+                
+                首页
+            </a>
+        </li>
+        
+        <li>
+            <a href="/tags" class="waves-effect waves-light">
+                
+                <i class="fa fa-fw fa-tags"></i>
+                
+                标签
+            </a>
+        </li>
+        
+        <li>
+            <a href="/categories" class="waves-effect waves-light">
+                
+                <i class="fa fa-fw fa-bookmark"></i>
+                
+                分类
+            </a>
+        </li>
+        
+        <li>
+            <a href="/archives" class="waves-effect waves-light">
+                
+                <i class="fa fa-fw fa-archive"></i>
+                
+                归档
+            </a>
+        </li>
+        
+        <li>
+            <a href="/about" class="waves-effect waves-light">
+                
+                <i class="fa fa-fw fa-user-circle-o"></i>
+                
+                关于
+            </a>
+        </li>
+        
+        <li>
+            <a href="/friends" class="waves-effect waves-light">
+                
+                <i class="fa fa-fw fa-address-book"></i>
+                
+                友情链接
+            </a>
+        </li>
+        
+        
+        <li><div class="divider"></div></li>
+        <li>
+            <a href="https://github.com/james-ok" class="waves-effect waves-light" target="_blank">
+                <i class="fa fa-github-square fa-fw"></i>Fork Me
+            </a>
+        </li>
+        
+    </ul>
+
+    <div class="social-link">
+    <a href="https://github.com/james-ok" class="tooltipped" target="_blank" data-tooltip="访问我的GitHub" data-position="top" data-delay="50">
+        <i class="fa fa-github"></i>
+    </a>
+
+
+
+    <a href="mailto:vip.dujuncheng@foxmail.com" class="tooltipped" target="_blank" data-tooltip="邮件联系我" data-position="top" data-delay="50">
+        <i class="fa fa-envelope-open"></i>
+    </a>
+
+
+
+    <a href="tencent://AddContact/?fromId=50&fromSubId=1&subcmd=all&uin=1261100508" class="tooltipped" data-tooltip="QQ联系我: 1261100508" data-position="top" data-delay="50">
+        <i class="fa fa-qq"></i>
+    </a>
+
+
+</div>
+</div>
+
+            </div>
+        </div>
+
+        
+        <style>
+    .nav-transparent .github-corner {
+        display: none !important;
+    }
+
+    .github-corner {
+        position: absolute;
+        z-index: 10;
+        top: 0;
+        right: 0;
+        border: 0;
+        transform: scale(1.1);
+    }
+
+    .github-corner svg {
+        color: #0f9d58;
+        fill: #fff;
+        height: 64px;
+        width: 64px;
+    }
+
+    .github-corner:hover .octo-arm {
+        animation: a 0.56s ease-in-out;
+    }
+
+    .github-corner .octo-arm {
+        animation: none;
+    }
+
+    @keyframes a {
+        0%,
+        to {
+            transform: rotate(0);
+        }
+        20%,
+        60% {
+            transform: rotate(-25deg);
+        }
+        40%,
+        80% {
+            transform: rotate(10deg);
+        }
+    }
+</style>
+
+<a href="https://github.com/james-ok" class="github-corner tooltipped hide-on-med-and-down" target="_blank"
+   data-tooltip="Fork Me" data-position="left" data-delay="50">
+    <svg viewBox="0 0 250 250" aria-hidden="true">
+        <path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path>
+        <path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2"
+              fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path>
+        <path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z"
+              fill="currentColor" class="octo-body"></path>
+    </svg>
+</a>
+        
+    </nav>
+</header>
+
+
+
+
+
+<div class="bg-cover post-cover" style="background-image: url('/medias/featureimages/7.jpg')">
+    <div class="container">
+        <div class="row">
+            <div class="col s12 m12 l12">
+                <div class="brand">
+                    <div class="description center-align post-title">
+                        Dubbo源码分析
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<main class="post-container content">
+
+    
+    <link rel="stylesheet" href="/libs/tocbot/tocbot.css">
+<style>
+    #articleContent h1::before,
+    #articleContent h2::before,
+    #articleContent h3::before,
+    #articleContent h4::before,
+    #articleContent h5::before,
+    #articleContent h6::before {
+        display: block;
+        content: " ";
+        height: 100px;
+        margin-top: -100px;
+        visibility: hidden;
+    }
+
+    #articleContent :focus {
+        outline: none;
+    }
+
+    .toc-fixed {
+        position: fixed;
+        top: 64px;
+    }
+
+    .toc-widget {
+        padding-left: 20px;
+    }
+
+    .toc-widget .toc-title {
+        margin: 35px 0 15px 0;
+        padding-left: 17px;
+        font-size: 1.5rem;
+        font-weight: bold;
+        line-height: 1.5rem;
+    }
+
+    .toc-widget ol {
+        padding: 0;
+        list-style: none;
+    }
+
+    #toc-content ol {
+        padding-left: 10px;
+    }
+
+    #toc-content ol li {
+        padding-left: 10px;
+    }
+
+    #toc-content .toc-link:hover {
+        color: #42b983;
+        font-weight: 700;
+        text-decoration: underline;
+    }
+
+    #toc-content .toc-link::before {
+        background-color: transparent;
+        max-height: 25px;
+    }
+
+    #toc-content .is-active-link {
+        color: #42b983;
+    }
+
+    #toc-content .is-active-link::before {
+        background-color: #42b983;
+    }
+</style>
+<div class="row">
+    <div class="col s12 m12 l9">
+        <!-- 文章内容详情 -->
+<div id="artDetail">
+    <div class="card">
+        <div class="card-content article-info">
+            <div class="row tag-cate">
+                <div class="col s7">
+                    
+                    <div class="article-tag">
+                        
+                            <a href="/tags/SPI/" target="_blank">
+                                <span class="chip bg-color">SPI</span>
+                            </a>
+                        
+                    </div>
+                    
+                </div>
+                <div class="col s5 right-align">
+                    
+                    <div class="post-cate">
+                        <i class="fa fa-bookmark fa-fw icon-category"></i>
+                        
+                            <a href="/categories/Dubbo/" class="post-category" target="_blank">
+                                Dubbo
+                            </a>
+                        
+                    </div>
+                    
+                </div>
+            </div>
+
+            <div class="post-info">
+                <div class="post-date info-break-policy">
+                    <i class="fa fa-calendar-minus-o fa-fw"></i>发布日期:&nbsp;&nbsp;
+                    2019-11-21
+                </div>
+
+                
+                    
+                    <div class="info-break-policy">
+                        <i class="fa fa-file-word-o fa-fw"></i>文章字数:&nbsp;&nbsp;
+                        8.5k
+                    </div>
+                    
+
+                    
+                    <div class="info-break-policy">
+                        <i class="fa fa-clock-o fa-fw"></i>阅读时长:&nbsp;&nbsp;
+                        36 分
+                    </div>
+                    
+                
+				
+				
+                    <div id="busuanzi_container_page_pv" class="info-break-policy">
+                        <i class="fa fa-eye fa-fw"></i>阅读次数:&nbsp;&nbsp;
+                        <span id="busuanzi_value_page_pv"></span>
+                    </div>
+				
+            </div>
+        </div>
+        <hr class="clearfix">
+        <div class="card-content article-card-content">
+            <div id="articleContent">
+                <h2 id="Dubbo-SPI"><a href="#Dubbo-SPI" class="headerlink" title="Dubbo SPI"></a>Dubbo SPI</h2><h3 id="Dubbo-SPI使用以及规范"><a href="#Dubbo-SPI使用以及规范" class="headerlink" title="Dubbo SPI使用以及规范"></a>Dubbo SPI使用以及规范</h3><ul>
+<li>创建接口并且加上@SPI注解表示该接口是一个Dubbo扩展点，将该扩展点打成一个jar包发布<pre class="line-numbers language-java"><code class="language-java"><span class="token annotation punctuation">@SPI</span>
+<span class="token keyword">public</span> <span class="token keyword">interface</span> <span class="token class-name">IHelloService</span> <span class="token punctuation">{</span>
+  String <span class="token function">sayHello</span><span class="token punctuation">(</span>String msg<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+</li>
+<li>在需要实现的扩展插件项目中依赖以上接口扩展点，并且实现该接口扩展点<pre class="line-numbers language-java"><code class="language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">HelloServiceImpl</span> <span class="token keyword">implements</span> <span class="token class-name">IHelloService</span> <span class="token punctuation">{</span>
+  <span class="token annotation punctuation">@Override</span>
+  <span class="token keyword">public</span> String <span class="token function">sayHello</span><span class="token punctuation">(</span>String msg<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      <span class="token keyword">return</span> <span class="token string">"Dubbo SPI Hello:"</span> <span class="token operator">+</span> msg<span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+并且在resources目录先创建META-INF/dubbo/(META-INF/dubbo/;META-INF/dubbo/internal/;META-INF/services/;任选一个)目录，并且在该目录下创建以扩展点接口为名称的文件：xyz.easyjava.dubbo.spi.extend.service.IHelloService<br>在该文件中填写该扩展点实现的名称以及实现类的全路径，例如：<pre class="line-numbers language-java"><code class="language-java">hello<span class="token operator">=</span>xyz<span class="token punctuation">.</span>easyjava<span class="token punctuation">.</span>dubbo<span class="token punctuation">.</span>spi<span class="token punctuation">.</span>achieve<span class="token punctuation">.</span>service<span class="token punctuation">.</span>HelloServiceImpl
+hello2<span class="token operator">=</span>xyz<span class="token punctuation">.</span>easyjava<span class="token punctuation">.</span>dubbo<span class="token punctuation">.</span>spi<span class="token punctuation">.</span>achieve<span class="token punctuation">.</span>service<span class="token punctuation">.</span>HelloServiceImpl2<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+</li>
+<li>现在就可以在需要使用该扩展的地方使用了，方式如下：<pre class="line-numbers language-java"><code class="language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">DubboSpiTest</span> <span class="token punctuation">{</span>
+  <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span>String<span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      IHelloService extension <span class="token operator">=</span> ExtensionLoader<span class="token punctuation">.</span><span class="token function">getExtensionLoader</span><span class="token punctuation">(</span>IHelloService<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getExtension</span><span class="token punctuation">(</span><span class="token string">"hello2"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>extension<span class="token punctuation">.</span><span class="token function">sayHello</span><span class="token punctuation">(</span><span class="token string">"MrAToo"</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      IHelloService adaptiveExtension <span class="token operator">=</span> ExtensionLoader<span class="token punctuation">.</span><span class="token function">getExtensionLoader</span><span class="token punctuation">(</span>IHelloService<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getAdaptiveExtension</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>adaptiveExtension<span class="token punctuation">.</span><span class="token function">sayHello</span><span class="token punctuation">(</span><span class="token string">"MrAToo2"</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+</li>
+</ul>
+<h3 id="源码分析"><a href="#源码分析" class="headerlink" title="源码分析"></a>源码分析</h3><p>先从<code>ExtensionLoader.getExtensionLoader(IHelloService.class).getAdaptiveExtension();</code>开始</p>
+<ol>
+<li><p>首先是调用了<code>ExtensionLoader</code>类的静态方法<code>getExtensionLoader(IHelloService.class)</code>，在该方法中除了校验，主要是实例化了一个<code>ExtensionLoader</code>实例，<br>并且在<code>ExtensionLoader</code>的构造方法中通过<code>objectFactory = (type == ExtensionFactory.class ? null : ExtensionLoader.getExtensionLoader(ExtensionFactory.class).getAdaptiveExtension());</code><br>创建了一个<code>objectFactory</code>对象，该对象是一个<code>ExtensionFactory</code></p>
+</li>
+<li><p>得到<code>ExtensionLoader</code>实例对象过后，调用了该对象的<code>getAdaptiveExtension()</code>方法，在该方法中调用<code>createAdaptiveExtension()</code>创建实例，在<code>createAdaptiveExtension()</code>里面调用<br><code>injectExtension((T) getAdaptiveExtensionClass().newInstance());</code>，该方法是一个注入的方法，先不看<code>injectExtension()</code>方法是如何注入的，我们先看实例是如何创建的，很显然，实例作为<code>injectExtension()</code><br>方法的参数传入，那么<code>getAdaptiveExtensionClass().newInstance()</code>这句代码中的<code>getAdaptiveExtensionClass()</code>方法返回的Class<t>中T是如何确定的。在<code>getAdaptiveExtensionClass()</code>方法中，首先调用了<code>getExtensionClasses();</code><br>然后判断<code>cachedAdaptiveClass</code>是否为null，如果不为null，则直接返回<code>cachedAdaptiveClass</code>，那么再看看<code>getExtensionClasses();</code>方法中又干了什么，在该方法中又调用了<code>loadExtensionClasses()</code>，下面来看看该方法的代码：</t></p>
+<pre class="line-numbers language-java"><code class="language-java"><span class="token keyword">private</span> Map<span class="token operator">&lt;</span>String<span class="token punctuation">,</span> Class<span class="token operator">&lt;</span><span class="token operator">?</span><span class="token operator">>></span> <span class="token function">loadExtensionClasses</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+ <span class="token keyword">final</span> SPI defaultAnnotation <span class="token operator">=</span> type<span class="token punctuation">.</span><span class="token function">getAnnotation</span><span class="token punctuation">(</span>SPI<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+ <span class="token keyword">if</span> <span class="token punctuation">(</span>defaultAnnotation <span class="token operator">!=</span> null<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+     String value <span class="token operator">=</span> defaultAnnotation<span class="token punctuation">.</span><span class="token function">value</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+     <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>value <span class="token operator">=</span> value<span class="token punctuation">.</span><span class="token function">trim</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">length</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">></span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+         String<span class="token punctuation">[</span><span class="token punctuation">]</span> names <span class="token operator">=</span> NAME_SEPARATOR<span class="token punctuation">.</span><span class="token function">split</span><span class="token punctuation">(</span>value<span class="token punctuation">)</span><span class="token punctuation">;</span>
+         <span class="token keyword">if</span> <span class="token punctuation">(</span>names<span class="token punctuation">.</span>length <span class="token operator">></span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+             <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">IllegalStateException</span><span class="token punctuation">(</span><span class="token string">"more than 1 default extension name on extension "</span> <span class="token operator">+</span> type<span class="token punctuation">.</span><span class="token function">getName</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+                     <span class="token operator">+</span> <span class="token string">": "</span> <span class="token operator">+</span> Arrays<span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span>names<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+         <span class="token punctuation">}</span>
+         <span class="token keyword">if</span> <span class="token punctuation">(</span>names<span class="token punctuation">.</span>length <span class="token operator">==</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+             cachedDefaultName <span class="token operator">=</span> names<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+         <span class="token punctuation">}</span>
+     <span class="token punctuation">}</span>
+ <span class="token punctuation">}</span>
+
+ Map<span class="token operator">&lt;</span>String<span class="token punctuation">,</span> Class<span class="token operator">&lt;</span><span class="token operator">?</span><span class="token operator">>></span> extensionClasses <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">HashMap</span><span class="token operator">&lt;</span>String<span class="token punctuation">,</span> Class<span class="token operator">&lt;</span><span class="token operator">?</span><span class="token operator">>></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+ <span class="token function">loadDirectory</span><span class="token punctuation">(</span>extensionClasses<span class="token punctuation">,</span> DUBBO_INTERNAL_DIRECTORY<span class="token punctuation">,</span> type<span class="token punctuation">.</span><span class="token function">getName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+ <span class="token function">loadDirectory</span><span class="token punctuation">(</span>extensionClasses<span class="token punctuation">,</span> DUBBO_INTERNAL_DIRECTORY<span class="token punctuation">,</span> type<span class="token punctuation">.</span><span class="token function">getName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">replace</span><span class="token punctuation">(</span><span class="token string">"org.apache"</span><span class="token punctuation">,</span> <span class="token string">"com.alibaba"</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+ <span class="token function">loadDirectory</span><span class="token punctuation">(</span>extensionClasses<span class="token punctuation">,</span> DUBBO_DIRECTORY<span class="token punctuation">,</span> type<span class="token punctuation">.</span><span class="token function">getName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+ <span class="token function">loadDirectory</span><span class="token punctuation">(</span>extensionClasses<span class="token punctuation">,</span> DUBBO_DIRECTORY<span class="token punctuation">,</span> type<span class="token punctuation">.</span><span class="token function">getName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">replace</span><span class="token punctuation">(</span><span class="token string">"org.apache"</span><span class="token punctuation">,</span> <span class="token string">"com.alibaba"</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+ <span class="token function">loadDirectory</span><span class="token punctuation">(</span>extensionClasses<span class="token punctuation">,</span> SERVICES_DIRECTORY<span class="token punctuation">,</span> type<span class="token punctuation">.</span><span class="token function">getName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+ <span class="token function">loadDirectory</span><span class="token punctuation">(</span>extensionClasses<span class="token punctuation">,</span> SERVICES_DIRECTORY<span class="token punctuation">,</span> type<span class="token punctuation">.</span><span class="token function">getName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">replace</span><span class="token punctuation">(</span><span class="token string">"org.apache"</span><span class="token punctuation">,</span> <span class="token string">"com.alibaba"</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+ <span class="token keyword">return</span> extensionClasses<span class="token punctuation">;</span>
+<span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>首先是判断<code>type</code>的类对象是否包含@SPI注解，如果包含该注解，则将该注解的value值放到<code>cachedDefaultName</code>属性中（该属性在<code>createAdaptiveExtensionClassCode</code>方法中使用到，可以通过<code>getDefaultExtensionName</code>方法获取默认扩展点，如果自适应扩展点中URL协议为空该值可以作为默认协议），<br>最后调用<code>loadDirectory(extensionClasses, DUBBO_DIRECTORY, type.getName());</code>分别加载<code>META-INF/dubbo/;META-INF/dubbo/internal/;META-INF/services/;</code>三个目录下的文件，最终会调用一下方法</p>
+<pre class="line-numbers language-java"><code class="language-java"><span class="token comment" spellcheck="true">/**
+* extensionClasses: 扩展类集合
+* resourceURL: 资源URL
+* clazz: 扩展类Class（实现了扩展接口的类，配置在接口文件中的Class）
+* name: 名称
+*/</span>
+<span class="token keyword">private</span> <span class="token keyword">void</span> <span class="token function">loadClass</span><span class="token punctuation">(</span>Map<span class="token operator">&lt;</span>String<span class="token punctuation">,</span> Class<span class="token operator">&lt;</span><span class="token operator">?</span><span class="token operator">>></span> extensionClasses<span class="token punctuation">,</span> java<span class="token punctuation">.</span>net<span class="token punctuation">.</span>URL resourceURL<span class="token punctuation">,</span> Class<span class="token operator">&lt;</span><span class="token operator">?</span><span class="token operator">></span> clazz<span class="token punctuation">,</span> String name<span class="token punctuation">)</span> <span class="token keyword">throws</span> NoSuchMethodException <span class="token punctuation">{</span>
+ <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>type<span class="token punctuation">.</span><span class="token function">isAssignableFrom</span><span class="token punctuation">(</span>clazz<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+     <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">IllegalStateException</span><span class="token punctuation">(</span><span class="token string">"Error when load extension class(interface: "</span> <span class="token operator">+</span>
+             type <span class="token operator">+</span> <span class="token string">", class line: "</span> <span class="token operator">+</span> clazz<span class="token punctuation">.</span><span class="token function">getName</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token string">"), class "</span>
+             <span class="token operator">+</span> clazz<span class="token punctuation">.</span><span class="token function">getName</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token string">"is not subtype of interface."</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+ <span class="token punctuation">}</span>
+ <span class="token keyword">if</span> <span class="token punctuation">(</span>clazz<span class="token punctuation">.</span><span class="token function">isAnnotationPresent</span><span class="token punctuation">(</span>Adaptive<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+     <span class="token keyword">if</span> <span class="token punctuation">(</span>cachedAdaptiveClass <span class="token operator">==</span> null<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+         cachedAdaptiveClass <span class="token operator">=</span> clazz<span class="token punctuation">;</span>
+     <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>cachedAdaptiveClass<span class="token punctuation">.</span><span class="token function">equals</span><span class="token punctuation">(</span>clazz<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+         <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">IllegalStateException</span><span class="token punctuation">(</span><span class="token string">"More than 1 adaptive class found: "</span>
+                 <span class="token operator">+</span> cachedAdaptiveClass<span class="token punctuation">.</span><span class="token function">getClass</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getName</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+                 <span class="token operator">+</span> <span class="token string">", "</span> <span class="token operator">+</span> clazz<span class="token punctuation">.</span><span class="token function">getClass</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+     <span class="token punctuation">}</span>
+ <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token function">isWrapperClass</span><span class="token punctuation">(</span>clazz<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+     Set<span class="token operator">&lt;</span>Class<span class="token operator">&lt;</span><span class="token operator">?</span><span class="token operator">>></span> wrappers <span class="token operator">=</span> cachedWrapperClasses<span class="token punctuation">;</span>
+     <span class="token keyword">if</span> <span class="token punctuation">(</span>wrappers <span class="token operator">==</span> null<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+         cachedWrapperClasses <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">ConcurrentHashSet</span><span class="token operator">&lt;</span>Class<span class="token operator">&lt;</span><span class="token operator">?</span><span class="token operator">>></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+         wrappers <span class="token operator">=</span> cachedWrapperClasses<span class="token punctuation">;</span>
+     <span class="token punctuation">}</span>
+     wrappers<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>clazz<span class="token punctuation">)</span><span class="token punctuation">;</span>
+ <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+     clazz<span class="token punctuation">.</span><span class="token function">getConstructor</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+     <span class="token keyword">if</span> <span class="token punctuation">(</span>name <span class="token operator">==</span> null <span class="token operator">||</span> name<span class="token punctuation">.</span><span class="token function">length</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+         name <span class="token operator">=</span> <span class="token function">findAnnotationName</span><span class="token punctuation">(</span>clazz<span class="token punctuation">)</span><span class="token punctuation">;</span>
+         <span class="token keyword">if</span> <span class="token punctuation">(</span>name<span class="token punctuation">.</span><span class="token function">length</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+             <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">IllegalStateException</span><span class="token punctuation">(</span><span class="token string">"No such extension name for the class "</span> <span class="token operator">+</span> clazz<span class="token punctuation">.</span><span class="token function">getName</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token string">" in the config "</span> <span class="token operator">+</span> resourceURL<span class="token punctuation">)</span><span class="token punctuation">;</span>
+         <span class="token punctuation">}</span>
+     <span class="token punctuation">}</span>
+     String<span class="token punctuation">[</span><span class="token punctuation">]</span> names <span class="token operator">=</span> NAME_SEPARATOR<span class="token punctuation">.</span><span class="token function">split</span><span class="token punctuation">(</span>name<span class="token punctuation">)</span><span class="token punctuation">;</span>
+     <span class="token keyword">if</span> <span class="token punctuation">(</span>names <span class="token operator">!=</span> null <span class="token operator">&amp;&amp;</span> names<span class="token punctuation">.</span>length <span class="token operator">></span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+         Activate activate <span class="token operator">=</span> clazz<span class="token punctuation">.</span><span class="token function">getAnnotation</span><span class="token punctuation">(</span>Activate<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+         <span class="token keyword">if</span> <span class="token punctuation">(</span>activate <span class="token operator">!=</span> null<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+             cachedActivates<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span>names<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">,</span> activate<span class="token punctuation">)</span><span class="token punctuation">;</span>
+         <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+             <span class="token comment" spellcheck="true">// support com.alibaba.dubbo.common.extension.Activate</span>
+             com<span class="token punctuation">.</span>alibaba<span class="token punctuation">.</span>dubbo<span class="token punctuation">.</span>common<span class="token punctuation">.</span>extension<span class="token punctuation">.</span>Activate oldActivate <span class="token operator">=</span> clazz<span class="token punctuation">.</span><span class="token function">getAnnotation</span><span class="token punctuation">(</span>com<span class="token punctuation">.</span>alibaba<span class="token punctuation">.</span>dubbo<span class="token punctuation">.</span>common<span class="token punctuation">.</span>extension<span class="token punctuation">.</span>Activate<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+             <span class="token keyword">if</span> <span class="token punctuation">(</span>oldActivate <span class="token operator">!=</span> null<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                 cachedActivates<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span>names<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">,</span> oldActivate<span class="token punctuation">)</span><span class="token punctuation">;</span>
+             <span class="token punctuation">}</span>
+         <span class="token punctuation">}</span>
+         <span class="token keyword">for</span> <span class="token punctuation">(</span>String n <span class="token operator">:</span> names<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+             <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>cachedNames<span class="token punctuation">.</span><span class="token function">containsKey</span><span class="token punctuation">(</span>clazz<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                 cachedNames<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span>clazz<span class="token punctuation">,</span> n<span class="token punctuation">)</span><span class="token punctuation">;</span>
+             <span class="token punctuation">}</span>
+             Class<span class="token operator">&lt;</span><span class="token operator">?</span><span class="token operator">></span> c <span class="token operator">=</span> extensionClasses<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span>n<span class="token punctuation">)</span><span class="token punctuation">;</span>
+             <span class="token keyword">if</span> <span class="token punctuation">(</span>c <span class="token operator">==</span> null<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                 extensionClasses<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span>n<span class="token punctuation">,</span> clazz<span class="token punctuation">)</span><span class="token punctuation">;</span>
+             <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token keyword">if</span> <span class="token punctuation">(</span>c <span class="token operator">!=</span> clazz<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                 <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">IllegalStateException</span><span class="token punctuation">(</span><span class="token string">"Duplicate extension "</span> <span class="token operator">+</span> type<span class="token punctuation">.</span><span class="token function">getName</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token string">" name "</span> <span class="token operator">+</span> n <span class="token operator">+</span> <span class="token string">" on "</span> <span class="token operator">+</span> c<span class="token punctuation">.</span><span class="token function">getName</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token string">" and "</span> <span class="token operator">+</span> clazz<span class="token punctuation">.</span><span class="token function">getName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+             <span class="token punctuation">}</span>
+         <span class="token punctuation">}</span>
+     <span class="token punctuation">}</span>
+ <span class="token punctuation">}</span>
+<span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+</li>
+<li><p>先看第一个判断<code>clazz.isAnnotationPresent(Adaptive.class)</code>，如果扩展类包含<code>@Adaptive</code>注解，则将该扩展作为自定义适配扩展点，赋值给<code>cachedAdaptiveClass</code>，前面提到在<code>getExtensionClasses</code>方法中，如果<code>cachedAdaptiveClass</code>值不为null，则直接返回，<br>所以，当实现接口的类上有<code>@Adaptive</code>注解，则<code>getAdaptiveExtension();</code>返回的实例就是当前实例，即自定义适配扩展点。</p>
+</li>
+<li><p>再看第二个判断<code>isWrapperClass(clazz)</code>,判断当前这个扩展是不是一个wrapper，如果是，则将该扩展类放入到<code>cachedWrapperClasses</code>中，该变量在<code>getExtension</code>方法调用链<code>createExtension</code>方法中被使用，大概源码内容为，如果<code>cachedWrapperClasses</code>变量有值，则需要包装原始对象。</p>
+</li>
+<li><p>如果以上两个条件都不成立，则走else逻辑，在该逻辑中，首先判断当前扩展类中是否包含<code>@Activate</code>注解，如果包含，则put到<code>cachedActivates</code>中。<br>在判断<code>cachedNames</code>中是否包含当前扩展类的类对象，如果不存在，则将class放到<code>cachedNames</code>里面，最后循环将name作为key，class作为value放到<code>extensionClasses</code>中。</p>
+</li>
+</ol>
+<p>我们在回过头来看，在<code>getAdaptiveExtensionClass</code>方法中，如果<code>cachedAdaptiveClass</code>为null，则会调用<code>createAdaptiveExtensionClass</code>方法，并且将该方法的返回值放入到<code>cachedAdaptiveClass</code>中，然后返回。<br>在<code>createAdaptiveExtensionClass</code>方法中，通过调用<code>createAdaptiveExtensionClassCode</code>方法返回一串代码，然后动态编译生成Class对象，然后返回。<br>那么在<code>createAdaptiveExtensionClassCode</code>（该方法主要是生成一个代理类）中，这串代码到底是什么，又是如何生成的呢？<br>首先，dubbo只会为该接口中带有<code>@Adaptive</code>注解的方法进行代理，如果该接口中没有带<code>@Adaptive</code>注解的方法，则会抛出异常，并且，Dubbo是一个基于URL驱动的RPC框架，方法中标注有<code>@Adaptive</code>注解的方法参数上必须<br>带有<code>java.net.URL</code>参数，否则，会抛出异常。<br>生成的代理类代码如下：</p>
+<pre class="line-numbers language-java"><code class="language-java"><span class="token keyword">package</span> xyz<span class="token punctuation">.</span>easyjava<span class="token punctuation">.</span>dubbo<span class="token punctuation">.</span>spi<span class="token punctuation">.</span>achieve<span class="token punctuation">.</span>service<span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> org<span class="token punctuation">.</span>apache<span class="token punctuation">.</span>dubbo<span class="token punctuation">.</span>common<span class="token punctuation">.</span>extension<span class="token punctuation">.</span>ExtensionLoader<span class="token punctuation">;</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Protocol</span>$Adaptive <span class="token keyword">implements</span> <span class="token class-name">org<span class="token punctuation">.</span>apache<span class="token punctuation">.</span>dubbo<span class="token punctuation">.</span>rpc<span class="token punctuation">.</span>Protocol</span> <span class="token punctuation">{</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">destroy</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span><span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">UnsupportedOperationException</span><span class="token punctuation">(</span><span class="token string">"method public abstract void org.apache.dubbo.rpc.Protocol.destroy() of interface org.apache.dubbo.rpc.Protocol is not adaptive method!"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">public</span> <span class="token keyword">int</span> <span class="token function">getDefaultPort</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span><span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">UnsupportedOperationException</span><span class="token punctuation">(</span><span class="token string">"method public abstract int org.apache.dubbo.rpc.Protocol.getDefaultPort() of interface org.apache.dubbo.rpc.Protocol is not adaptive method!"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">public</span> org<span class="token punctuation">.</span>apache<span class="token punctuation">.</span>dubbo<span class="token punctuation">.</span>rpc<span class="token punctuation">.</span>Exporter <span class="token function">export</span><span class="token punctuation">(</span>org<span class="token punctuation">.</span>apache<span class="token punctuation">.</span>dubbo<span class="token punctuation">.</span>rpc<span class="token punctuation">.</span>Invoker arg0<span class="token punctuation">)</span> <span class="token keyword">throws</span> org<span class="token punctuation">.</span>apache<span class="token punctuation">.</span>dubbo<span class="token punctuation">.</span>rpc<span class="token punctuation">.</span>RpcException <span class="token punctuation">{</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>arg0 <span class="token operator">==</span> null<span class="token punctuation">)</span> <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">IllegalArgumentException</span><span class="token punctuation">(</span><span class="token string">"org.apache.dubbo.rpc.Invoker argument == null"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>arg0<span class="token punctuation">.</span><span class="token function">getUrl</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">==</span> null<span class="token punctuation">)</span> <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">IllegalArgumentException</span><span class="token punctuation">(</span><span class="token string">"org.apache.dubbo.rpc.Invoker argument getUrl() == null"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>org<span class="token punctuation">.</span>apache<span class="token punctuation">.</span>dubbo<span class="token punctuation">.</span>common<span class="token punctuation">.</span>URL url <span class="token operator">=</span> arg0<span class="token punctuation">.</span><span class="token function">getUrl</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        String extName <span class="token operator">=</span> <span class="token punctuation">(</span> url<span class="token punctuation">.</span><span class="token function">getProtocol</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">==</span> null <span class="token operator">?</span> <span class="token string">"dubbo"</span> <span class="token operator">:</span> url<span class="token punctuation">.</span><span class="token function">getProtocol</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">if</span><span class="token punctuation">(</span>extName <span class="token operator">==</span> null<span class="token punctuation">)</span> <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">IllegalStateException</span><span class="token punctuation">(</span><span class="token string">"Fail to get extension(org.apache.dubbo.rpc.Protocol) name from url("</span> <span class="token operator">+</span> url<span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token string">") use keys([protocol])"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        org<span class="token punctuation">.</span>apache<span class="token punctuation">.</span>dubbo<span class="token punctuation">.</span>rpc<span class="token punctuation">.</span>Protocol extension <span class="token operator">=</span> <span class="token punctuation">(</span>org<span class="token punctuation">.</span>apache<span class="token punctuation">.</span>dubbo<span class="token punctuation">.</span>rpc<span class="token punctuation">.</span>Protocol<span class="token punctuation">)</span>ExtensionLoader<span class="token punctuation">.</span><span class="token function">getExtensionLoader</span><span class="token punctuation">(</span>org<span class="token punctuation">.</span>apache<span class="token punctuation">.</span>dubbo<span class="token punctuation">.</span>rpc<span class="token punctuation">.</span>Protocol<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getExtension</span><span class="token punctuation">(</span>extName<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> extension<span class="token punctuation">.</span><span class="token function">export</span><span class="token punctuation">(</span>arg0<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">public</span> org<span class="token punctuation">.</span>apache<span class="token punctuation">.</span>dubbo<span class="token punctuation">.</span>rpc<span class="token punctuation">.</span>Invoker <span class="token function">refer</span><span class="token punctuation">(</span>java<span class="token punctuation">.</span>lang<span class="token punctuation">.</span>Class <span class="token class-name">arg0</span><span class="token punctuation">,</span> org<span class="token punctuation">.</span>apache<span class="token punctuation">.</span>dubbo<span class="token punctuation">.</span>common<span class="token punctuation">.</span>URL arg1<span class="token punctuation">)</span> <span class="token keyword">throws</span> org<span class="token punctuation">.</span>apache<span class="token punctuation">.</span>dubbo<span class="token punctuation">.</span>rpc<span class="token punctuation">.</span>RpcException <span class="token punctuation">{</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>arg1 <span class="token operator">==</span> null<span class="token punctuation">)</span> <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">IllegalArgumentException</span><span class="token punctuation">(</span><span class="token string">"url == null"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        org<span class="token punctuation">.</span>apache<span class="token punctuation">.</span>dubbo<span class="token punctuation">.</span>common<span class="token punctuation">.</span>URL url <span class="token operator">=</span> arg1<span class="token punctuation">;</span>
+        String extName <span class="token operator">=</span> <span class="token punctuation">(</span> url<span class="token punctuation">.</span><span class="token function">getProtocol</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">==</span> null <span class="token operator">?</span> <span class="token string">"dubbo"</span> <span class="token operator">:</span> url<span class="token punctuation">.</span><span class="token function">getProtocol</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">if</span><span class="token punctuation">(</span>extName <span class="token operator">==</span> null<span class="token punctuation">)</span> <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">IllegalStateException</span><span class="token punctuation">(</span><span class="token string">"Fail to get extension(org.apache.dubbo.rpc.Protocol) name from url("</span> <span class="token operator">+</span> url<span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token string">") use keys([protocol])"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        org<span class="token punctuation">.</span>apache<span class="token punctuation">.</span>dubbo<span class="token punctuation">.</span>rpc<span class="token punctuation">.</span>Protocol extension <span class="token operator">=</span> <span class="token punctuation">(</span>org<span class="token punctuation">.</span>apache<span class="token punctuation">.</span>dubbo<span class="token punctuation">.</span>rpc<span class="token punctuation">.</span>Protocol<span class="token punctuation">)</span>ExtensionLoader<span class="token punctuation">.</span><span class="token function">getExtensionLoader</span><span class="token punctuation">(</span>org<span class="token punctuation">.</span>apache<span class="token punctuation">.</span>dubbo<span class="token punctuation">.</span>rpc<span class="token punctuation">.</span>Protocol<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getExtension</span><span class="token punctuation">(</span>extName<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> extension<span class="token punctuation">.</span><span class="token function">refer</span><span class="token punctuation">(</span>arg0<span class="token punctuation">,</span> arg1<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>从上面生成的类来看，dubbo对扩展接口上带有<code>@Adaptive</code>注解的方法进行了代理，没有标注<code>@Adaptive</code>的方法，直接抛出<code>UnsupportedOperationException</code>异常。被代理的方法通过URL协议来获取一个扩展点。</p>
+<p>接下来，分析<code>injectExtension()</code>方法，也就是Dubbo中的依赖注入，Duboo支持Spring的依赖注入以及Dubbo自己的SPI自适应扩展点。<br>在该方法中可以看出，当前自适应扩展点中是否包含一个setter方法，有且只有一个参数的public的方法，并且该方法没有标注<code>@DisableInject</code>注解，那么Dubbo会为该自适应扩展点依赖注入。<br>被注入的对象核心代码在<code>objectFactory.getExtension(pt, property)</code>通过<code>objectFactory</code>的<code>getExtension</code>方法获得被注入的对象，然后放到当前自适应扩展点，实现依赖注入。<br>那么<code>objectFactory</code>对象是什么，在什么时候被实例化的？<br>还记得在最开始通过<code>getExtensionLoader(IHelloService.class)</code>获得一个<code>ExtensionLoader</code>对象的时候，由于<code>ExtensionLoader</code>类的构造方法是私有化的，所以在<code>getExtensionLoader</code>方法中<br>创建了<code>ExtensionLoader</code>对象，然而就在这个私有化的构造方法中，有这样一句代码</p>
+<pre class="line-numbers language-java"><code class="language-java">objectFactory <span class="token operator">=</span> <span class="token punctuation">(</span>type <span class="token operator">==</span> ExtensionFactory<span class="token punctuation">.</span><span class="token keyword">class</span> <span class="token operator">?</span> null <span class="token operator">:</span> ExtensionLoader<span class="token punctuation">.</span><span class="token function">getExtensionLoader</span><span class="token punctuation">(</span>ExtensionFactory<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getAdaptiveExtension</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p>这就是<code>objectFactory</code>对象实例化的地方。<br>这里有创建了一个<code>ExtensionFactory</code>类的<code>ExtensionLoader</code>对象，并且将这个对象缓存在了<code>EXTENSION_LOADERS</code>（所以，整个运行过程中<code>ExtensionFactory</code>只有一个，并且都是<code>AdaptiveExtensionFactory</code>），然后调用了该对象的<code>getAdaptiveExtension</code>方法，该方法前面已经分析过来，<br>返回一个自适应扩展点。然后我们看<code>ExtensionFactory</code>的实现类，有一个名为<code>AdaptiveExtensionFactory</code>的自适应扩展点（因为该类上面标注了<code>@Adaptive</code>注解），所以我们可以发现<code>objectFactory</code><br>对象的实例其实就是<code>AdaptiveExtensionFactory</code>类的实例对象。回到<code>injectExtension</code>方法的<code>objectFactory.getExtension(pt, property)</code>代码上，这里实际上调用的就是<code>AdaptiveExtensionFactory</code><br>里面的<code>getExtension</code>方法。该方法如下：</p>
+<pre class="line-numbers language-java"><code class="language-java"><span class="token keyword">public</span> <span class="token operator">&lt;</span>T<span class="token operator">></span> T <span class="token function">getExtension</span><span class="token punctuation">(</span>Class<span class="token operator">&lt;</span>T<span class="token operator">></span> type<span class="token punctuation">,</span> String name<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span>ExtensionFactory factory <span class="token operator">:</span> factories<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            T extension <span class="token operator">=</span> factory<span class="token punctuation">.</span><span class="token function">getExtension</span><span class="token punctuation">(</span>type<span class="token punctuation">,</span> name<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>extension <span class="token operator">!=</span> null<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                <span class="token keyword">return</span> extension<span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> null<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>其中<code>factories</code>就是所有的<code>ExtensionFactory</code>类的扩展，从所有的扩展点中任意返回一个null的实例返回，dubbo默认有<code>SpringExtensionFactory</code>、<code>SPIExtensionFactory</code>两个，<code>SpringExtensionFactory</code>的实现<br>就是从Spring的IOC容器中拿到对象注入。如果被注入对象类上标注了<code>@SPI</code>注解，那么最终还是交给<code>SPIExtensionFactory</code>对象去处理，该类里面有是通过<code>ExtensionLoader</code>得到一个自适应扩展点。到此，Dubbo的依赖注入完成。<br>类图：<br><img src="/2019/11/21/Dubbo源码分析/ExtensionLoader.png" alt="ExtensionLoader"></p>
+<h2 id="服务发布流程"><a href="#服务发布流程" class="headerlink" title="服务发布流程"></a>服务发布流程</h2><p>Dubbo是阿里巴巴依赖Spring开源的RPC框架，至于为什么要依赖Spring我们不去深究，大概是因为Spring优秀的IOC，又或者是AOP，介于Spring的高度抽象，灵活的设计模式，便于去扩展，所以，Dubbo基于Spring的扩展区实现<br>Dubbo基于Spring扩展的<code>NameSpaceHandler</code>，Spring容器在启动的时候会调用<code>DubboNamespaceHandler</code>的<code>init()</code>方法，该方法主要是解析Spring配置文件中的Dubbo扩展标签，将其转换成<code>BeanDefinition</code>，以便Spring容器进行管理。<br>Dubbo服务的发布流程是从ServiceBean开始的，因为该类实现了接口<code>InitializingBean</code>，该接口会在依赖注入完成过后调用<code>afterPropertiesSet</code>方法，而<code>afterPropertiesSet</code>方法就是Dubbo启动的关键。<br>首先在<code>afterPropertiesSet</code>方法中经过一些校验，在最后几行代码中，判断，是否支持SpringListener，如果不支持这调用<code>export</code>方法，如果支持，则会在Spring启动过程中执行<code>ServiceBean</code>中<code>onApplicationEvent</code>方法，总之都会调用到<code>export</code>方法，<br>在<code>export</code>方法中主要是调用<code>ServiceBean</code>父类<code>ServiceConfig</code>的<code>export</code>方法，在该方法中，首先也是一堆的校验，最后调用<code>doExport</code>方法，继续往下看，<code>doExportUrls()</code>方法中首先是将所有的注册中心配置拼装成一个URL集合，类似如下：<br><code>registry://localhost:2181/org.apache.dubbo.registry.RegistryService?application=easyjava-dubbo-provider&amp;dubbo=2.0.2&amp;pid=205792&amp;registry=zookeeper&amp;release=2.7.0&amp;timestamp=1574749134905</code>，然后用循环的方式调用<code>doExportUrlsFor1Protocol</code>，<br>该方法主要作用是将服务拼装成一个URL，如下：</p>
+<pre><code>dubbo://10.98.217.74:20880/xyz.easyjava.dubbo.api.IHelloService?anyhost=true&amp;application=easyjava-dubbo-provider&amp;bean.name=xyz.easyjava.dubbo.api.IHelloService&amp;bind.ip=10.98.217.74&amp;bind.port=20880&amp;dubbo=2.0.2&amp;generic=false&amp;interface=xyz.easyjava.dubbo.api.IHelloService&amp;methods=sayHello&amp;pid=205792&amp;release=2.7.0&amp;side=provider&amp;timestamp=1574749545179</code></pre><p>最后将调用一下这句代码</p>
+<pre class="line-numbers language-java"><code class="language-java">Invoker<span class="token operator">&lt;</span><span class="token operator">?</span><span class="token operator">></span> invoker <span class="token operator">=</span> proxyFactory<span class="token punctuation">.</span><span class="token function">getInvoker</span><span class="token punctuation">(</span>ref<span class="token punctuation">,</span> <span class="token punctuation">(</span>Class<span class="token punctuation">)</span> interfaceClass<span class="token punctuation">,</span> registryURL<span class="token punctuation">.</span><span class="token function">addParameterAndEncoded</span><span class="token punctuation">(</span>Constants<span class="token punctuation">.</span>EXPORT_KEY<span class="token punctuation">,</span> url<span class="token punctuation">.</span><span class="token function">toFullString</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+DelegateProviderMetaDataInvoker wrapperInvoker <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">DelegateProviderMetaDataInvoker</span><span class="token punctuation">(</span>invoker<span class="token punctuation">,</span> <span class="token keyword">this</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+Exporter<span class="token operator">&lt;</span><span class="token operator">?</span><span class="token operator">></span> exporter <span class="token operator">=</span> protocol<span class="token punctuation">.</span><span class="token function">export</span><span class="token punctuation">(</span>wrapperInvoker<span class="token punctuation">)</span><span class="token punctuation">;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+<p><code>proxyFactory</code>是一个自适应扩展点，是<code>ServiceConfig</code>的成员变量<br><code>private static final ProxyFactory proxyFactory = ExtensionLoader.getExtensionLoader(ProxyFactory.class).getAdaptiveExtension();</code><br><code>ProxyFactory</code>默认扩展点是<code>JavassistProxyFactory</code>，并且该扩展点有一个包装器<code>StubProxyFactoryWrapper</code>，所以，<code>proxyFactory</code>实际上是<code>StubProxyFactoryWrapper(JavassistProxyFactory())</code><br>调用<code>StubProxyFactoryWrapper(JavassistProxyFactory())</code>的<code>getInvoker</code>方法，实际上最终会调用到<code>JavassistProxyFactory</code>的<code>getInvoker</code>方法，传入三个参数，第一个<code>ref</code>是当前服务接口的实现类，<br>例如：<code>HelloServiceImpl</code>，第二个参数<code>(Class) interfaceClass</code>是当前服务接口的类对象，第三个参数是注册中心加上服务地址拼接成的一个注册中心地址，服务地址作为注册中心的<code>export</code>参数，如下：</p>
+<pre><code>registry://localhost:2181/org.apache.dubbo.registry.RegistryService?application=easyjava-dubbo-provider&amp;dubbo=2.0.2&amp;export=dubbo%3A%2F%2F10.98.217.74%3A20880%2Fxyz.easyjava.dubbo.api.IHelloService%3Fanyhost%3Dtrue%26application%3Deasyjava-dubbo-provider%26bean.name%3Dxyz.easyjava.dubbo.api.IHelloService%26bind.ip%3D10.98.217.74%26bind.port%3D20880%26dubbo%3D2.0.2%26generic%3Dfalse%26interface%3Dxyz.easyjava.dubbo.api.IHelloService%26methods%3DsayHello%26pid%3D205792%26release%3D2.7.0%26side%3Dprovider%26timestamp%3D1574749545179&amp;pid=205792&amp;registry=zookeeper&amp;release=2.7.0&amp;timestamp=1574749134905</code></pre><p>在该方法中，主要做了两件事情：</p>
+<ol>
+<li>创建一个当前实例对象的<code>Wrapper</code>（代理对象），这里为什么需要有这样一层包装，我猜想的话应该是Dubbo的调用是通过URL进行的，我们可以方便的通过传入参数来决定调用哪个方法，我们通过<code>Arthas</code>来看一下<code>Wrapper</code>对象代码：</li>
+</ol>
+<pre class="line-numbers language-java"><code class="language-java"><span class="token keyword">package</span> org<span class="token punctuation">.</span>apache<span class="token punctuation">.</span>dubbo<span class="token punctuation">.</span>common<span class="token punctuation">.</span>bytecode<span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> java<span class="token punctuation">.</span>lang<span class="token punctuation">.</span>reflect<span class="token punctuation">.</span>InvocationTargetException<span class="token punctuation">;</span>
+<span class="token keyword">import</span> java<span class="token punctuation">.</span>util<span class="token punctuation">.</span>Map<span class="token punctuation">;</span>
+<span class="token keyword">import</span> org<span class="token punctuation">.</span>apache<span class="token punctuation">.</span>dubbo<span class="token punctuation">.</span>common<span class="token punctuation">.</span>bytecode<span class="token punctuation">.</span>ClassGenerator<span class="token punctuation">;</span>
+<span class="token keyword">import</span> org<span class="token punctuation">.</span>apache<span class="token punctuation">.</span>dubbo<span class="token punctuation">.</span>common<span class="token punctuation">.</span>bytecode<span class="token punctuation">.</span>NoSuchMethodException<span class="token punctuation">;</span>
+<span class="token keyword">import</span> org<span class="token punctuation">.</span>apache<span class="token punctuation">.</span>dubbo<span class="token punctuation">.</span>common<span class="token punctuation">.</span>bytecode<span class="token punctuation">.</span>NoSuchPropertyException<span class="token punctuation">;</span>
+<span class="token keyword">import</span> org<span class="token punctuation">.</span>apache<span class="token punctuation">.</span>dubbo<span class="token punctuation">.</span>common<span class="token punctuation">.</span>bytecode<span class="token punctuation">.</span>Wrapper<span class="token punctuation">;</span>
+<span class="token keyword">import</span> xyz<span class="token punctuation">.</span>easyjava<span class="token punctuation">.</span>dubbo<span class="token punctuation">.</span>provider<span class="token punctuation">.</span>service<span class="token punctuation">.</span>HelloServiceImpl<span class="token punctuation">;</span>
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Wrapper1</span>
+<span class="token keyword">extends</span> <span class="token class-name">Wrapper</span>
+<span class="token keyword">implements</span> <span class="token class-name">ClassGenerator<span class="token punctuation">.</span>DC</span> <span class="token punctuation">{</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> String<span class="token punctuation">[</span><span class="token punctuation">]</span> pns<span class="token punctuation">;</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> Map pts<span class="token punctuation">;</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> String<span class="token punctuation">[</span><span class="token punctuation">]</span> mns<span class="token punctuation">;</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> String<span class="token punctuation">[</span><span class="token punctuation">]</span> dmns<span class="token punctuation">;</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> Class<span class="token punctuation">[</span><span class="token punctuation">]</span> mts0<span class="token punctuation">;</span>
+
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> String<span class="token punctuation">[</span><span class="token punctuation">]</span> <span class="token function">getPropertyNames</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> pns<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">boolean</span> <span class="token function">hasProperty</span><span class="token punctuation">(</span>String string<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> pts<span class="token punctuation">.</span><span class="token function">containsKey</span><span class="token punctuation">(</span>string<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> Class <span class="token class-name">getPropertyType</span><span class="token punctuation">(</span>String string<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> <span class="token punctuation">(</span>Class<span class="token punctuation">)</span>pts<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span>string<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> String<span class="token punctuation">[</span><span class="token punctuation">]</span> <span class="token function">getMethodNames</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> mns<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> String<span class="token punctuation">[</span><span class="token punctuation">]</span> <span class="token function">getDeclaredMethodNames</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> dmns<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">setPropertyValue</span><span class="token punctuation">(</span>Object object<span class="token punctuation">,</span> String string<span class="token punctuation">,</span> Object object2<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">try</span> <span class="token punctuation">{</span>
+            HelloServiceImpl helloServiceImpl <span class="token operator">=</span> <span class="token punctuation">(</span>HelloServiceImpl<span class="token punctuation">)</span>object<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">Throwable</span> throwable<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">IllegalArgumentException</span><span class="token punctuation">(</span>throwable<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">NoSuchPropertyException</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">StringBuffer</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">append</span><span class="token punctuation">(</span><span class="token string">"Not found property \""</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">append</span><span class="token punctuation">(</span>string<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">append</span><span class="token punctuation">(</span><span class="token string">"\" field or setter method in class xyz.easyjava.dubbo.provider.service.HelloServiceImpl."</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> Object <span class="token function">getPropertyValue</span><span class="token punctuation">(</span>Object object<span class="token punctuation">,</span> String string<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">try</span> <span class="token punctuation">{</span>
+            HelloServiceImpl helloServiceImpl <span class="token operator">=</span> <span class="token punctuation">(</span>HelloServiceImpl<span class="token punctuation">)</span>object<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">Throwable</span> throwable<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">IllegalArgumentException</span><span class="token punctuation">(</span>throwable<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">NoSuchPropertyException</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">StringBuffer</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">append</span><span class="token punctuation">(</span><span class="token string">"Not found property \""</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">append</span><span class="token punctuation">(</span>string<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">append</span><span class="token punctuation">(</span><span class="token string">"\" field or setter method in class xyz.easyjava.dubbo.provider.service.HelloServiceImpl."</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> Object <span class="token function">invokeMethod</span><span class="token punctuation">(</span>Object object<span class="token punctuation">,</span> String string<span class="token punctuation">,</span> Class<span class="token punctuation">[</span><span class="token punctuation">]</span> arrclass<span class="token punctuation">,</span> Object<span class="token punctuation">[</span><span class="token punctuation">]</span> arrobject<span class="token punctuation">)</span> <span class="token keyword">throws</span> InvocationTargetException <span class="token punctuation">{</span>
+        HelloServiceImpl helloServiceImpl<span class="token punctuation">;</span>
+        <span class="token keyword">try</span> <span class="token punctuation">{</span>
+            helloServiceImpl <span class="token operator">=</span> <span class="token punctuation">(</span>HelloServiceImpl<span class="token punctuation">)</span>object<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">Throwable</span> throwable<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">IllegalArgumentException</span><span class="token punctuation">(</span>throwable<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">try</span> <span class="token punctuation">{</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token string">"sayHello"</span><span class="token punctuation">.</span><span class="token function">equals</span><span class="token punctuation">(</span>string<span class="token punctuation">)</span> <span class="token operator">&amp;&amp;</span> arrclass<span class="token punctuation">.</span>length <span class="token operator">==</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                <span class="token keyword">return</span> helloServiceImpl<span class="token punctuation">.</span><span class="token function">sayHello</span><span class="token punctuation">(</span><span class="token punctuation">(</span>String<span class="token punctuation">)</span>arrobject<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">Throwable</span> throwable<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">InvocationTargetException</span><span class="token punctuation">(</span>throwable<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">NoSuchMethodException</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">StringBuffer</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">append</span><span class="token punctuation">(</span><span class="token string">"Not found method \""</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">append</span><span class="token punctuation">(</span>string<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">append</span><span class="token punctuation">(</span><span class="token string">"\" in class xyz.easyjava.dubbo.provider.service.HelloServiceImpl."</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<ol start="2">
+<li>创建一个匿名AbstractProxyInvoker，且<code>doInvoke</code>方法实际上是调用的<code>Wrapper</code>代理对象的<code>invokeMethod</code>方法<br>最后，该方法会返回一个<code>AbstractProxyInvoker</code>，其中<code>doInvoke(T proxy, String methodName,Class&lt;?&gt;[] parameterTypes,Object[] arguments)</code>中会调用代理Wrapper类中<code>wrapper.invokeMethod(proxy, methodName, parameterTypes, arguments);</code>方法,<br>得到invoker过后，再次用<code>DelegateProviderMetaDataInvoker</code>包装一下，通过<code>protocol.export(wrapperInvoker);</code>传入<code>DelegateProviderMetaDataInvoker</code>实例对象，得到一个<code>exporter</code>，那么这里的<code>protocol</code>又是什么实现呢，<br><code>Protocol protocol = ExtensionLoader.getExtensionLoader(Protocol.class).getAdaptiveExtension();</code>这里又是一个自适应扩展点，会生成一个<code>Protocol$Adaptive</code>，我们前面已经分析过了，<code>Protocol$Adaptive</code>会<br>通过当前协议动态获取一个扩展点，那么当前URL的协议是<code>registry</code>,所以，这里应该会调用到<code>RegistryProtocol</code>的<code>export</code>方法，在该方法中，会调用<code>getRegistryUrl()</code>方法，这个方法将注册中心协议从<code>registry</code>改为<br>URL中<code>registry</code>参数值作为协议头，如果不存在则默认使用dubbo注册中心。<br>拿到注册中心和服务发布URL过后，该方法核心代码是<code>final ExporterChangeableWrapper&lt;T&gt; exporter = doLocalExport(originInvoker, providerUrl);</code>，这句代码就是暴露服务的关键，服务暴露过后，该方法中还有一句核心代码<br><code>register(registryUrl, registeredProviderUrl);</code>，这句代码就是将服务地址注册到注册中心，我们一个一个的来分析，dubbo究竟是如何发布服务并且将服务URL注册到注册中心的。<br>首先是服务暴露，通过查看<code>doLocalExport</code>方法，该方法需要两个参数，当前<code>invoker</code>和<code>providerUrl</code>服务地址,该方法源码：<pre class="line-numbers language-java"><code class="language-java"><span class="token keyword">private</span> <span class="token operator">&lt;</span>T<span class="token operator">></span> ExporterChangeableWrapper<span class="token operator">&lt;</span>T<span class="token operator">></span> <span class="token function">doLocalExport</span><span class="token punctuation">(</span><span class="token keyword">final</span> Invoker<span class="token operator">&lt;</span>T<span class="token operator">></span> originInvoker<span class="token punctuation">,</span> URL providerUrl<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+ String key <span class="token operator">=</span> <span class="token function">getCacheKey</span><span class="token punctuation">(</span>originInvoker<span class="token punctuation">)</span><span class="token punctuation">;</span>
+ ExporterChangeableWrapper<span class="token operator">&lt;</span>T<span class="token operator">></span> exporter <span class="token operator">=</span> <span class="token punctuation">(</span>ExporterChangeableWrapper<span class="token operator">&lt;</span>T<span class="token operator">></span><span class="token punctuation">)</span> bounds<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span>key<span class="token punctuation">)</span><span class="token punctuation">;</span>
+ <span class="token keyword">if</span> <span class="token punctuation">(</span>exporter <span class="token operator">==</span> null<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+     <span class="token keyword">synchronized</span> <span class="token punctuation">(</span>bounds<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+         exporter <span class="token operator">=</span> <span class="token punctuation">(</span>ExporterChangeableWrapper<span class="token operator">&lt;</span>T<span class="token operator">></span><span class="token punctuation">)</span> bounds<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span>key<span class="token punctuation">)</span><span class="token punctuation">;</span>
+         <span class="token keyword">if</span> <span class="token punctuation">(</span>exporter <span class="token operator">==</span> null<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+             <span class="token keyword">final</span> Invoker<span class="token operator">&lt;</span><span class="token operator">?</span><span class="token operator">></span> invokerDelegete <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">InvokerDelegate</span><span class="token operator">&lt;</span>T<span class="token operator">></span><span class="token punctuation">(</span>originInvoker<span class="token punctuation">,</span> providerUrl<span class="token punctuation">)</span><span class="token punctuation">;</span>
+             exporter <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">ExporterChangeableWrapper</span><span class="token operator">&lt;</span>T<span class="token operator">></span><span class="token punctuation">(</span><span class="token punctuation">(</span>Exporter<span class="token operator">&lt;</span>T<span class="token operator">></span><span class="token punctuation">)</span> protocol<span class="token punctuation">.</span><span class="token function">export</span><span class="token punctuation">(</span>invokerDelegete<span class="token punctuation">)</span><span class="token punctuation">,</span> originInvoker<span class="token punctuation">)</span><span class="token punctuation">;</span>
+             bounds<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span>key<span class="token punctuation">,</span> exporter<span class="token punctuation">)</span><span class="token punctuation">;</span>
+         <span class="token punctuation">}</span>
+     <span class="token punctuation">}</span>
+ <span class="token punctuation">}</span>
+ <span class="token keyword">return</span> exporter<span class="token punctuation">;</span>
+<span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+我们可以看到<code>protocol.export(invokerDelegete)</code>，这里的<code>protocol</code>是什么取决于<code>invokerDelegete</code>中URL协议是什么，这里显然URL是服务地址，所以协议应该是dubbo，所以这里的<code>protocol</code>最终得到的就是<br><code>DubboProtocol</code>，查看<code>DubboProtocol</code>中的<code>export</code>方法，该方法中会调用<code>openServer(url);</code>，传入服务暴露地址，在<code>openServer(url);</code>方法中首先从缓存中获取一个<code>server</code>，如果缓存中没有，则创建一个，<br>那么我们看<code>server</code>是如何创建的，参看<code>createServer</code>方法，<pre class="line-numbers language-java"><code class="language-java">ExchangeServer server<span class="token punctuation">;</span>
+<span class="token keyword">try</span> <span class="token punctuation">{</span>
+ server <span class="token operator">=</span> Exchangers<span class="token punctuation">.</span><span class="token function">bind</span><span class="token punctuation">(</span>url<span class="token punctuation">,</span> requestHandler<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">RemotingException</span> e<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+ <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">RpcException</span><span class="token punctuation">(</span><span class="token string">"Fail to start server(url: "</span> <span class="token operator">+</span> url <span class="token operator">+</span> <span class="token string">") "</span> <span class="token operator">+</span> e<span class="token punctuation">.</span><span class="token function">getMessage</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> e<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+通过<code>Exchangers.bind(url, requestHandler);</code>得到一个<code>server</code>，该方法最终会调用到<code>HeaderExchanger</code>中的<code>bind</code>方法，到这里还没完，在<code>HeaderExchanger</code>的<code>bind</code>方法中创建一个<code>HeaderExchangeServer</code>对象，<br>该对象需要一个<code>Server</code>参数，这个<code>Server</code>从<code>Transporters.bind</code>中得来，这里又是一个自适应扩展点，但最终会调到<code>NettyTransporter</code>中的<code>bind</code>方法，最终在这里new了一个<code>NettyServer</code>，发布服务。<br>接下来分析服务注册，在<code>RegistryProtocol</code>的<code>export</code>方法中，有这样一句代码<code>final Registry registry = getRegistry(originInvoker);</code>，这句代码的作用就是活的一个注册中心，我们来分析一下<code>getRegistry</code>方法，<pre class="line-numbers language-java"><code class="language-java"><span class="token keyword">private</span> Registry <span class="token function">getRegistry</span><span class="token punctuation">(</span><span class="token keyword">final</span> Invoker<span class="token operator">&lt;</span><span class="token operator">?</span><span class="token operator">></span> originInvoker<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+ URL registryUrl <span class="token operator">=</span> <span class="token function">getRegistryUrl</span><span class="token punctuation">(</span>originInvoker<span class="token punctuation">)</span><span class="token punctuation">;</span>
+ <span class="token keyword">return</span> registryFactory<span class="token punctuation">.</span><span class="token function">getRegistry</span><span class="token punctuation">(</span>registryUrl<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+从代码中可以看出，首先通过URL得到注册中心的协议地址，这个时候这里应该是<code>zookeeper://...</code>，然后通过<code>registryFactory</code>得到一个注册中心工厂对象，但是这里的<code>registryFactory</code>又是什么，改成员变量有一个setter方法，<br>可见，这里的<code>registryFactory</code>是依赖注入进来的，又是一个<code>RegistryFactory$Adaptive</code>，通过协议地址动态活的一个<code>RegistryFactory</code>，当前协议为zookeeper，所以这里的<code>registryFactory</code>就是<code>ZookeeperRegistryFactory</code><br>然后调用<code>ZookeeperRegistryFactory</code>的<code>getRegistry</code>方法，发现该类中并没有这个方法，所以会调用父类<code>AbstractRegistryFactory</code>的<code>getRegistry</code>方法，这是一个模板方法，具体实现由子类完成，在该方法中<code>registry = createRegistry(url);</code>就是<br>由子类<code>ZookeeperRegistryFactory</code>实现的，实现如下：<pre class="line-numbers language-java"><code class="language-java"><span class="token annotation punctuation">@Override</span>
+<span class="token keyword">public</span> Registry <span class="token function">createRegistry</span><span class="token punctuation">(</span>URL url<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+ <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token class-name">ZookeeperRegistry</span><span class="token punctuation">(</span>url<span class="token punctuation">,</span> zookeeperTransporter<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+回到<code>RegistryProtocol</code>的<code>export</code>方法中，得到一个<code>ZookeeperRegistry</code>注册中心过后，调用``方法，该方法实现如下：<pre class="line-numbers language-java"><code class="language-java"><span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">register</span><span class="token punctuation">(</span>URL registryUrl<span class="token punctuation">,</span> URL registeredProviderUrl<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+ Registry registry <span class="token operator">=</span> registryFactory<span class="token punctuation">.</span><span class="token function">getRegistry</span><span class="token punctuation">(</span>registryUrl<span class="token punctuation">)</span><span class="token punctuation">;</span>
+ registry<span class="token punctuation">.</span><span class="token function">register</span><span class="token punctuation">(</span>registeredProviderUrl<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+得到一个注册中心，并且注册，这里得到的注册中心和<code>getRegistry</code>方法得到注册中心方法一样，得到的都是<code>ZookeeperRegistry</code>，然后看<code>ZookeeperRegistry</code>的<code>register</code>方法，同理，<code>ZookeeperRegistry</code>中没有<code>register</code>则调用<br>父类<code>FailbackRegistry</code>的<code>register</code>方法，并且传入服务暴露URL，改方法又是一个模板方法，最终会调用<code>doRegister</code>，而这个方法在子类<code>ZookeeperRegistry</code>中实现，该方法如下：<pre class="line-numbers language-java"><code class="language-java"><span class="token annotation punctuation">@Override</span>
+<span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">doRegister</span><span class="token punctuation">(</span>URL url<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+ <span class="token keyword">try</span> <span class="token punctuation">{</span>
+     zkClient<span class="token punctuation">.</span><span class="token function">create</span><span class="token punctuation">(</span><span class="token function">toUrlPath</span><span class="token punctuation">(</span>url<span class="token punctuation">)</span><span class="token punctuation">,</span> url<span class="token punctuation">.</span><span class="token function">getParameter</span><span class="token punctuation">(</span>Constants<span class="token punctuation">.</span>DYNAMIC_KEY<span class="token punctuation">,</span> <span class="token boolean">true</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+ <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">Throwable</span> e<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+     <span class="token keyword">throw</span> <span class="token keyword">new</span> <span class="token class-name">RpcException</span><span class="token punctuation">(</span><span class="token string">"Failed to register "</span> <span class="token operator">+</span> url <span class="token operator">+</span> <span class="token string">" to zookeeper "</span> <span class="token operator">+</span> <span class="token function">getUrl</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token string">", cause: "</span> <span class="token operator">+</span> e<span class="token punctuation">.</span><span class="token function">getMessage</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> e<span class="token punctuation">)</span><span class="token punctuation">;</span>
+ <span class="token punctuation">}</span>
+<span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+这里直接创建一个zookeeper节点，即服务注册，生成的path路径为：<pre><code>/dubbo/xyz.easyjava.dubbo.api.IHelloService/providers/dubbo%3A%2F%2F10.98.217.74%3A20880%2Fxyz.easyjava.dubbo.api.IHelloService%3Fanyhost%3Dtrue%26application%3Deasyjava-dubbo-provider%26bean.name%3Dxyz.easyjava.dubbo.api.IHelloService%26dubbo%3D2.0.2%26generic%3Dfalse%26interface%3Dxyz.easyjava.dubbo.api.IHelloService%26methods%3DsayHello%26pid%3D212032%26release%3D2.7.0%26side%3Dprovider%26timestamp%3D1574752829404</code></pre>以上就是服务注册已经服务暴露全过程。</li>
+</ol>
+<h2 id="服务引用初始化过程"><a href="#服务引用初始化过程" class="headerlink" title="服务引用初始化过程"></a>服务引用初始化过程</h2><p>Dubbo服务引用的时机有两个，第一个是Spring容器在调用<code>ReferenceBean</code>中<code>afterPropertiesSet</code>方法时，第二个是<code>ReferenceBean</code>对应的服务在被注入到其他对象中时，两者的区别在于第一种是饿汉式的，第二种是懒汉式的，<br>Dubbo默认是懒汉式的，我们可以通过配置<code>&lt;dubbo:reference init=&#39;true&#39;&gt;</code>来将其改为饿汉式。<br>不管服务引用是饿汉还是懒汉模式，Dubbo都会调用<code>ReferenceBean</code>的<code>getObject</code>方法，接下来我们就从<code>getObject</code>方法开始分析，在<code>get</code>方法中，如果<code>ReferenceBean</code>对应的服务引用对象<code>ref</code>已存在，则直接返回，<br>如果不存在，则先调用<code>init</code>方法，服务引用对象<code>ref</code>就是在这里面进行创建的。<code>init</code>方法中除了对配置解析拼接到map中以外，最重要的是<code>ref = createProxy(map);</code>方法，在<code>createProxy</code>方法中，<br>首先是判断是否是本地调用，如果是，则创建<code>InjvmProtocol</code>的<code>refer</code>方法创建<code>InjvmInvoker</code>，则读取直连配置或注册中心URL（这里需要注意的是，如果选择了服务直连的方式，注册中心将失效，该方式用于在开发阶段调试过后一定要记得将其关掉），<br>如果urls只要一个，则直接通过<code>refProtocol.refer()</code>调用，如果urls有多个，则循环调用<code>refprotocol.refer</code>并且将invoker放到<code>invokers</code>List中，最后调用<code>cluster.join(new StaticDirectory(invokers))</code>将多个<code>invoker</code>伪装成一个<code>invoker</code>,<br>并且传入一个<code>StaticDirectory</code>静态目录服务，因为这里要么是多个注册中心，要么是多个服务提供者，而这些<code>invoker</code>是不会动态变化的。这个时候的<code>cluster</code>是一个自适应扩展点<code>Cluster$Adaptive</code>，循环调用时需要注意，如果有多个注册中心，<br>则在URL中添加<code>cluster</code>参数，值为<code>registryaware</code>,同样调用<code>cluster.join(new StaticDirectory(u,invokers))</code>，不过这里在创建<code>StaticDirectory</code>静态目录服务的时候多传入了一个注册中心的URL。这里先不去深究。<br>接下来分析<code>invoker</code>的创建过程，<code>invoker</code>的创建是通过<code>protocol.refer</code>方法，<code>protocol</code>的实现有很多，常用的是<code>RegistryProtocol</code>（注册中心）和<code>DubboProtocol</code>（服务直连使用Dubbo协议），这里只分析这两种协议。</p>
+<h3 id="DubboProtocol"><a href="#DubboProtocol" class="headerlink" title="DubboProtocol"></a>DubboProtocol</h3><pre class="line-numbers language-java"><code class="language-java"><span class="token keyword">class</span> <span class="token class-name">DubboProtocol</span> <span class="token punctuation">{</span>
+    <span class="token comment" spellcheck="true">//...</span>
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> <span class="token operator">&lt;</span>T<span class="token operator">></span> Invoker<span class="token operator">&lt;</span>T<span class="token operator">></span> <span class="token function">refer</span><span class="token punctuation">(</span>Class<span class="token operator">&lt;</span>T<span class="token operator">></span> serviceType<span class="token punctuation">,</span> URL url<span class="token punctuation">)</span> <span class="token keyword">throws</span> RpcException <span class="token punctuation">{</span>
+        <span class="token function">optimizeSerialization</span><span class="token punctuation">(</span>url<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment" spellcheck="true">// create rpc invoker.</span>
+        DubboInvoker<span class="token operator">&lt;</span>T<span class="token operator">></span> invoker <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">DubboInvoker</span><span class="token operator">&lt;</span>T<span class="token operator">></span><span class="token punctuation">(</span>serviceType<span class="token punctuation">,</span> url<span class="token punctuation">,</span> <span class="token function">getClients</span><span class="token punctuation">(</span>url<span class="token punctuation">)</span><span class="token punctuation">,</span> invokers<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        invokers<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>invoker<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> invoker<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">private</span> ExchangeClient<span class="token punctuation">[</span><span class="token punctuation">]</span> <span class="token function">getClients</span><span class="token punctuation">(</span>URL url<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token comment" spellcheck="true">// whether to share connection</span>
+        <span class="token keyword">boolean</span> service_share_connect <span class="token operator">=</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+        <span class="token keyword">int</span> connections <span class="token operator">=</span> url<span class="token punctuation">.</span><span class="token function">getParameter</span><span class="token punctuation">(</span>Constants<span class="token punctuation">.</span>CONNECTIONS_KEY<span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment" spellcheck="true">// if not configured, connection is shared, otherwise, one connection for one service</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>connections <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            service_share_connect <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+            connections <span class="token operator">=</span> <span class="token number">1</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        ExchangeClient<span class="token punctuation">[</span><span class="token punctuation">]</span> clients <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">ExchangeClient</span><span class="token punctuation">[</span>connections<span class="token punctuation">]</span><span class="token punctuation">;</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> clients<span class="token punctuation">.</span>length<span class="token punctuation">;</span> i<span class="token operator">++</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>service_share_connect<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                clients<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token function">getSharedClient</span><span class="token punctuation">(</span>url<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+                clients<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token function">initClient</span><span class="token punctuation">(</span>url<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> clients<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token comment" spellcheck="true">//...</span>
+<span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>DubboProtocol的<code>refer</code>方法很简单，直接创建一个<code>DubboInvoker</code>返回，但是这里值得注意的是<code>getClients(url)</code>方法，该方法中，首先会从url中读取参数<code>connections</code>，该参数在</p>
+<pre class="line-numbers language-xml"><code class="language-xml"><span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span><span class="token namespace">dubbo:</span>reference</span> <span class="token attr-name">id</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>helloService<span class="token punctuation">"</span></span> <span class="token attr-name">interface</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>xyz.easyjava.dubbo.api.IHelloService<span class="token punctuation">"</span></span> <span class="token attr-name">url</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>dubbo://10.98.217.74:20880;dubbo://10.98.217.73:20880<span class="token punctuation">"</span></span> <span class="token attr-name">connections</span><span class="token attr-value"><span class="token punctuation">=</span><span class="token punctuation">"</span>0<span class="token punctuation">"</span></span><span class="token punctuation">/></span></span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<p>中被指定，如果不指定，则默认为0，该值有三个，分别是：</p>
+<ul>
+<li>0：表示该服务使用JVM共享长连接（缺省）</li>
+<li>1：表示该服务使用独立一条长连接</li>
+<li>2：表示该服务使用独立两条长连接，这种方式一般使用于负载较大的服务。<br>所以，这里默认使用JVM共享长连接的方法，这个时候代码会执行<code>getSharedClient(url)</code>，该方法中首先从缓存中取，如果缓存未命中，则调用<code>initClient(url)</code>创建一个新的<code>ExchangeClient</code>，最后通过<code>ReferenceCountExchangeClient</code>包装过后放入到缓存最后返回，<br>再来看一下<code>initClient</code>方法，<code>initClient</code>方法首先判断客户端类型，默认为Netty，并且设置默认心跳间隔时间，最后判断是否延迟链接，如果是延迟连接，则创建<code>LazyConnectExchangeClient</code>，否则调用<code>Exchangers.connect(url, requestHandler)</code>,<br>延迟<code>LazyConnectExchangeClient</code>在发送请求之前调用<code>Exchangers.connect(url, requestHandler)</code>方法，所以，这里我们直接分析，实际上这里最终调用的是<code>HeaderExchanger.connect(URL url, ExchangeHandler handler)</code>，<pre class="line-numbers language-java"><code class="language-java"><span class="token keyword">class</span> <span class="token class-name">HeaderExchanger</span> <span class="token punctuation">{</span>
+  <span class="token comment" spellcheck="true">//...</span>
+  <span class="token annotation punctuation">@Override</span>
+  <span class="token keyword">public</span> ExchangeClient <span class="token function">connect</span><span class="token punctuation">(</span>URL url<span class="token punctuation">,</span> ExchangeHandler handler<span class="token punctuation">)</span> <span class="token keyword">throws</span> RemotingException <span class="token punctuation">{</span>
+      <span class="token keyword">return</span> <span class="token keyword">new</span> <span class="token class-name">HeaderExchangeClient</span><span class="token punctuation">(</span>Transporters<span class="token punctuation">.</span><span class="token function">connect</span><span class="token punctuation">(</span>url<span class="token punctuation">,</span> <span class="token keyword">new</span> <span class="token class-name">DecodeHandler</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">HeaderExchangeHandler</span><span class="token punctuation">(</span>handler<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token boolean">true</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+  <span class="token comment" spellcheck="true">//...</span>
+<span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+经过深入分析，<code>Transporters.connect</code>最终调用的是<code>NettyTransporter.connect</code>，方法中直接创建一个<code>NettyClient</code>，最终在<code>NettyClient</code>中连接目标服务，并且保存着客户端和服务间的<code>channel</code>，建立长连接。</li>
+</ul>
+<h3 id="RegistryProtocol"><a href="#RegistryProtocol" class="headerlink" title="RegistryProtocol"></a>RegistryProtocol</h3><p>在<code>RegistryProtocol</code>的<code>refer</code>方法中，首先设置URL协议头，从<code>registry</code>改为<code>Zookeeper</code>，然后通过注册中心工厂得到一个注册中心对象，这里得到的是<code>ZookeeperRegistry</code>，最后通过<code>group</code>判断调用<code>doRefer</code>方法的<code>cluster</code>参数应该是哪一个。<br>这里并不影响主流程，我们接着看<code>doRefer</code>方法，方法代码如下：</p>
+<pre class="line-numbers language-java"><code class="language-java"><span class="token keyword">class</span> <span class="token class-name">RegistryProtocol</span> <span class="token punctuation">{</span>
+    <span class="token comment" spellcheck="true">//...</span>
+    <span class="token keyword">private</span> <span class="token operator">&lt;</span>T<span class="token operator">></span> Invoker<span class="token operator">&lt;</span>T<span class="token operator">></span> <span class="token function">doRefer</span><span class="token punctuation">(</span>Cluster cluster<span class="token punctuation">,</span> Registry registry<span class="token punctuation">,</span> Class<span class="token operator">&lt;</span>T<span class="token operator">></span> type<span class="token punctuation">,</span> URL url<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        RegistryDirectory<span class="token operator">&lt;</span>T<span class="token operator">></span> directory <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">RegistryDirectory</span><span class="token operator">&lt;</span>T<span class="token operator">></span><span class="token punctuation">(</span>type<span class="token punctuation">,</span> url<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        directory<span class="token punctuation">.</span><span class="token function">setRegistry</span><span class="token punctuation">(</span>registry<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        directory<span class="token punctuation">.</span><span class="token function">setProtocol</span><span class="token punctuation">(</span>protocol<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment" spellcheck="true">// all attributes of REFER_KEY</span>
+        Map<span class="token operator">&lt;</span>String<span class="token punctuation">,</span> String<span class="token operator">></span> parameters <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">HashMap</span><span class="token operator">&lt;</span>String<span class="token punctuation">,</span> String<span class="token operator">></span><span class="token punctuation">(</span>directory<span class="token punctuation">.</span><span class="token function">getUrl</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">getParameters</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        URL subscribeUrl <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">URL</span><span class="token punctuation">(</span>CONSUMER_PROTOCOL<span class="token punctuation">,</span> parameters<span class="token punctuation">.</span><span class="token function">remove</span><span class="token punctuation">(</span>REGISTER_IP_KEY<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">,</span> type<span class="token punctuation">.</span><span class="token function">getName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> parameters<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token operator">!</span>ANY_VALUE<span class="token punctuation">.</span><span class="token function">equals</span><span class="token punctuation">(</span>url<span class="token punctuation">.</span><span class="token function">getServiceInterface</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">&amp;&amp;</span> url<span class="token punctuation">.</span><span class="token function">getParameter</span><span class="token punctuation">(</span>REGISTER_KEY<span class="token punctuation">,</span> <span class="token boolean">true</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            registry<span class="token punctuation">.</span><span class="token function">register</span><span class="token punctuation">(</span><span class="token function">getRegisteredConsumerUrl</span><span class="token punctuation">(</span>subscribeUrl<span class="token punctuation">,</span> url<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        directory<span class="token punctuation">.</span><span class="token function">buildRouterChain</span><span class="token punctuation">(</span>subscribeUrl<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        directory<span class="token punctuation">.</span><span class="token function">subscribe</span><span class="token punctuation">(</span>subscribeUrl<span class="token punctuation">.</span><span class="token function">addParameter</span><span class="token punctuation">(</span>CATEGORY_KEY<span class="token punctuation">,</span>
+                PROVIDERS_CATEGORY <span class="token operator">+</span> <span class="token string">","</span> <span class="token operator">+</span> CONFIGURATORS_CATEGORY <span class="token operator">+</span> <span class="token string">","</span> <span class="token operator">+</span> ROUTERS_CATEGORY<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        Invoker invoker <span class="token operator">=</span> cluster<span class="token punctuation">.</span><span class="token function">join</span><span class="token punctuation">(</span>directory<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        ProviderConsumerRegTable<span class="token punctuation">.</span><span class="token function">registerConsumer</span><span class="token punctuation">(</span>invoker<span class="token punctuation">,</span> url<span class="token punctuation">,</span> subscribeUrl<span class="token punctuation">,</span> directory<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> invoker<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token comment" spellcheck="true">//...</span>
+<span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>以上代码首先创建注册中心目录服务，并且设置器注册中心对象<code>ZookeeperRegistry</code>和协议<code>Protocol$Adaptive</code>，然后组装消费者URL<code>subscribeUrl</code>，注册到注册中心，构建路由器链，订阅providers,routers,configurators.<br>最后执行<code>Invoker invoker = cluster.join(directory);</code>并返回<code>invoker</code>，首先来分析，服务订阅过程</p>
+<pre class="line-numbers language-java"><code class="language-java">directory<span class="token punctuation">.</span><span class="token function">subscribe</span><span class="token punctuation">(</span>subscribeUrl<span class="token punctuation">.</span><span class="token function">addParameter</span><span class="token punctuation">(</span>CATEGORY_KEY<span class="token punctuation">,</span>
+                PROVIDERS_CATEGORY <span class="token operator">+</span> <span class="token string">","</span> <span class="token operator">+</span> CONFIGURATORS_CATEGORY <span class="token operator">+</span> <span class="token string">","</span> <span class="token operator">+</span> ROUTERS_CATEGORY<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<p>服务订阅过程从<code>directory.subscribe</code>开始，在<code>RegistryDirectory</code>中调用<code>registry.subscribe(url, this);</code>，这里的<code>registry</code>是在<code>doRefer</code>方法中注入的，实例为<code>ZookeeperRegistry</code>，在<code>ZookeeperRegistry</code>的<code>subscribe</code>方法中<br>需要两个参数，一个URL和一个Listener，而这里传了this，说明这里this实现了<code>NotifyListener</code>接口，所以，这里传入的是this，接下来看<code>ZookeeperRegistry</code>的<code>subscribe</code>方法，发现该类中并没有此方法，那么必然会调父类的<code>subscribe</code>方法，<br>这里又是一个模板方法，最终还是会调用子类的实现<code>doSubscribe</code>方法，该方法中主要注册<code>Zookeeper</code>监听，如果有如果有节点变动，则会通知到<code>ZookeeperRegistry</code>中<code>notify</code>方法，传入<code>listener</code>，该方法调用链为：</p>
+<pre><code>ZookeeperRegistry.notify -&gt; ZookeeperRegistry.doNotify -&gt; AbstractRegistry.notify -&gt; listener.notify(categoryList)(RegistryDirectory.notify)</code></pre><p>categoryList：该参数为providers,routers,configurators节点下的所有URL地址。该方法中首先将注册中心读取到的URL转换成对象，比如Router,Configurator最后调用<code>refreshInvoker</code>，下面看一下<code>refreshInvoker</code>方法的实现：</p>
+<pre class="line-numbers language-java"><code class="language-java"><span class="token keyword">class</span> <span class="token class-name">RegistryDirectory</span> <span class="token punctuation">{</span>
+    <span class="token keyword">private</span> <span class="token keyword">void</span> <span class="token function">refreshInvoker</span><span class="token punctuation">(</span>List<span class="token operator">&lt;</span>URL<span class="token operator">></span> invokerUrls<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        Assert<span class="token punctuation">.</span><span class="token function">notNull</span><span class="token punctuation">(</span>invokerUrls<span class="token punctuation">,</span> <span class="token string">"invokerUrls should not be null"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>invokerUrls<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">==</span> <span class="token number">1</span> <span class="token operator">&amp;&amp;</span> invokerUrls<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">)</span> <span class="token operator">!=</span> null <span class="token operator">&amp;&amp;</span> Constants<span class="token punctuation">.</span>EMPTY_PROTOCOL<span class="token punctuation">.</span><span class="token function">equals</span><span class="token punctuation">(</span>invokerUrls
+                <span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">)</span>
+                <span class="token punctuation">.</span><span class="token function">getProtocol</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">this</span><span class="token punctuation">.</span>forbidden <span class="token operator">=</span> <span class="token boolean">true</span><span class="token punctuation">;</span> <span class="token comment" spellcheck="true">// Forbid to access</span>
+            <span class="token keyword">this</span><span class="token punctuation">.</span>invokers <span class="token operator">=</span> Collections<span class="token punctuation">.</span><span class="token function">emptyList</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            routerChain<span class="token punctuation">.</span><span class="token function">setInvokers</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">.</span>invokers<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token function">destroyAllInvokers</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment" spellcheck="true">// Close all invokers</span>
+        <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+            <span class="token keyword">this</span><span class="token punctuation">.</span>forbidden <span class="token operator">=</span> <span class="token boolean">false</span><span class="token punctuation">;</span> <span class="token comment" spellcheck="true">// Allow to access</span>
+            Map<span class="token operator">&lt;</span>String<span class="token punctuation">,</span> Invoker<span class="token operator">&lt;</span>T<span class="token operator">>></span> oldUrlInvokerMap <span class="token operator">=</span> <span class="token keyword">this</span><span class="token punctuation">.</span>urlInvokerMap<span class="token punctuation">;</span> <span class="token comment" spellcheck="true">// local reference</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>invokerUrls <span class="token operator">==</span> Collections<span class="token punctuation">.</span>&lt;URL<span class="token operator">></span><span class="token function">emptyList</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                invokerUrls <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">ArrayList</span><span class="token operator">&lt;</span><span class="token operator">></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>invokerUrls<span class="token punctuation">.</span><span class="token function">isEmpty</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">&amp;&amp;</span> <span class="token keyword">this</span><span class="token punctuation">.</span>cachedInvokerUrls <span class="token operator">!=</span> null<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                invokerUrls<span class="token punctuation">.</span><span class="token function">addAll</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">.</span>cachedInvokerUrls<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+                <span class="token keyword">this</span><span class="token punctuation">.</span>cachedInvokerUrls <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">HashSet</span><span class="token operator">&lt;</span><span class="token operator">></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token keyword">this</span><span class="token punctuation">.</span>cachedInvokerUrls<span class="token punctuation">.</span><span class="token function">addAll</span><span class="token punctuation">(</span>invokerUrls<span class="token punctuation">)</span><span class="token punctuation">;</span><span class="token comment" spellcheck="true">//Cached invoker urls, convenient for comparison</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>invokerUrls<span class="token punctuation">.</span><span class="token function">isEmpty</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                <span class="token keyword">return</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            Map<span class="token operator">&lt;</span>String<span class="token punctuation">,</span> Invoker<span class="token operator">&lt;</span>T<span class="token operator">>></span> newUrlInvokerMap <span class="token operator">=</span> <span class="token function">toInvokers</span><span class="token punctuation">(</span>invokerUrls<span class="token punctuation">)</span><span class="token punctuation">;</span><span class="token comment" spellcheck="true">// Translate url list to Invoker map</span>
+
+            <span class="token comment" spellcheck="true">// state change</span>
+            <span class="token comment" spellcheck="true">// If the calculation is wrong, it is not processed.</span>
+            <span class="token keyword">if</span> <span class="token punctuation">(</span>newUrlInvokerMap <span class="token operator">==</span> null <span class="token operator">||</span> newUrlInvokerMap<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                logger<span class="token punctuation">.</span><span class="token function">error</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">IllegalStateException</span><span class="token punctuation">(</span><span class="token string">"urls to invokers error .invokerUrls.size :"</span> <span class="token operator">+</span> invokerUrls<span class="token punctuation">.</span><span class="token function">size</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token string">", invoker.size :0. urls :"</span> <span class="token operator">+</span> invokerUrls
+                        <span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token keyword">return</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+
+            List<span class="token operator">&lt;</span>Invoker<span class="token operator">&lt;</span>T<span class="token operator">>></span> newInvokers <span class="token operator">=</span> Collections<span class="token punctuation">.</span><span class="token function">unmodifiableList</span><span class="token punctuation">(</span><span class="token keyword">new</span> <span class="token class-name">ArrayList</span><span class="token operator">&lt;</span><span class="token operator">></span><span class="token punctuation">(</span>newUrlInvokerMap<span class="token punctuation">.</span><span class="token function">values</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token comment" spellcheck="true">// pre-route and build cache, notice that route cache should build on original Invoker list.</span>
+            <span class="token comment" spellcheck="true">// toMergeMethodInvokerMap() will wrap some invokers having different groups, those wrapped invokers not should be routed.</span>
+            routerChain<span class="token punctuation">.</span><span class="token function">setInvokers</span><span class="token punctuation">(</span>newInvokers<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">this</span><span class="token punctuation">.</span>invokers <span class="token operator">=</span> multiGroup <span class="token operator">?</span> <span class="token function">toMergeInvokerList</span><span class="token punctuation">(</span>newInvokers<span class="token punctuation">)</span> <span class="token operator">:</span> newInvokers<span class="token punctuation">;</span>
+            <span class="token keyword">this</span><span class="token punctuation">.</span>urlInvokerMap <span class="token operator">=</span> newUrlInvokerMap<span class="token punctuation">;</span>
+
+            <span class="token keyword">try</span> <span class="token punctuation">{</span>
+                <span class="token function">destroyUnusedInvokers</span><span class="token punctuation">(</span>oldUrlInvokerMap<span class="token punctuation">,</span> newUrlInvokerMap<span class="token punctuation">)</span><span class="token punctuation">;</span> <span class="token comment" spellcheck="true">// Close the unused Invoker</span>
+            <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">Exception</span> e<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                logger<span class="token punctuation">.</span><span class="token function">warn</span><span class="token punctuation">(</span><span class="token string">"destroyUnusedInvokers error. "</span><span class="token punctuation">,</span> e<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>首先判断协议地址是否只有一个，并且协议为<code>empty</code>协议，如果是，销毁所有<code>invokers</code>，否则将URL列表转成<code>Invoker</code>（这里根据协议会创建<code>DubboInvoker</code>）列表得到<code>newUrlInvokerMap</code>，最后将赋值给<code>urlInvokerMap</code>，达到刷新<code>urlInvokerMap</code>的目的，<br>并且关闭关闭未使用的<code>Invoker</code>，回到<code>RegistryProtocol</code>的<code>doRefer</code>方法的<code>Invoker invoker = cluster.join(directory);</code>，这行代码将服务目录传入，其目的是做客户端负载均衡和服务容错，总之提供集群服务治理支持，这块后面单独分析。</p>
+<h3 id="创建代理"><a href="#创建代理" class="headerlink" title="创建代理"></a>创建代理</h3><p>不管是<code>DubboProtocol</code>还是<code>RegistryProtocol</code>最后都会返回一个<code>Invoker</code>，这个<code>Invoker</code>就是调用服务的客户端，里面封装了和服务端的长连接。但是如果我们直接将<code>Invoker</code>对象拿到业务代码中调用，这样对于我们的业务来说侵入性太高，<br>所以Dubbo使用代理的方式实现业务的零侵入，回到<code>ReferenceConfig</code>的<code>createProxy</code>方法，在最后一行代码<code>return (T) proxyFactory.getProxy(invoker);</code>返回一个代理对象，这里的<code>proxyFactory</code>是一个<code>JavassistProxyFactory</code>,<br>这里首先会调用父类<code>AbstractProxyFactory</code>的<code>getProxy</code>方法，然后调用<code>JavassistProxyFactory</code>的<code>getProxy</code>方法，代理类就是在该方法中被生成的，接下来看下生成的代理类：</p>
+<pre class="line-numbers language-java"><code class="language-java"><span class="token keyword">package</span> org<span class="token punctuation">.</span>apache<span class="token punctuation">.</span>dubbo<span class="token punctuation">.</span>common<span class="token punctuation">.</span>bytecode<span class="token punctuation">;</span>
+
+<span class="token keyword">import</span> com<span class="token punctuation">.</span>alibaba<span class="token punctuation">.</span>dubbo<span class="token punctuation">.</span>rpc<span class="token punctuation">.</span>service<span class="token punctuation">.</span>EchoService<span class="token punctuation">;</span>
+<span class="token keyword">import</span> java<span class="token punctuation">.</span>lang<span class="token punctuation">.</span>reflect<span class="token punctuation">.</span>InvocationHandler<span class="token punctuation">;</span>
+<span class="token keyword">import</span> java<span class="token punctuation">.</span>lang<span class="token punctuation">.</span>reflect<span class="token punctuation">.</span>Method<span class="token punctuation">;</span>
+<span class="token keyword">import</span> org<span class="token punctuation">.</span>apache<span class="token punctuation">.</span>dubbo<span class="token punctuation">.</span>common<span class="token punctuation">.</span>bytecode<span class="token punctuation">.</span>ClassGenerator<span class="token punctuation">;</span>
+<span class="token keyword">import</span> xyz<span class="token punctuation">.</span>easyjava<span class="token punctuation">.</span>dubbo<span class="token punctuation">.</span>api<span class="token punctuation">.</span>IHelloService<span class="token punctuation">;</span>
+
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">proxy0</span>
+<span class="token keyword">implements</span> <span class="token class-name">ClassGenerator<span class="token punctuation">.</span>DC</span><span class="token punctuation">,</span>
+EchoService<span class="token punctuation">,</span>
+IHelloService <span class="token punctuation">{</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> Method<span class="token punctuation">[</span><span class="token punctuation">]</span> methods<span class="token punctuation">;</span>
+    <span class="token keyword">private</span> InvocationHandler handler<span class="token punctuation">;</span>
+
+    <span class="token keyword">public</span> String <span class="token function">sayHello</span><span class="token punctuation">(</span>String string<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        Object<span class="token punctuation">[</span><span class="token punctuation">]</span> arrobject <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">Object</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">{</span>string<span class="token punctuation">}</span><span class="token punctuation">;</span>
+        Object object <span class="token operator">=</span> <span class="token keyword">this</span><span class="token punctuation">.</span>handler<span class="token punctuation">.</span><span class="token function">invoke</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">,</span> methods<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">,</span> arrobject<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> <span class="token punctuation">(</span>String<span class="token punctuation">)</span>object<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> Object $<span class="token function">echo</span><span class="token punctuation">(</span>Object object<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        Object<span class="token punctuation">[</span><span class="token punctuation">]</span> arrobject <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">Object</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">{</span>object<span class="token punctuation">}</span><span class="token punctuation">;</span>
+        Object object2 <span class="token operator">=</span> <span class="token keyword">this</span><span class="token punctuation">.</span>handler<span class="token punctuation">.</span><span class="token function">invoke</span><span class="token punctuation">(</span><span class="token keyword">this</span><span class="token punctuation">,</span> methods<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span><span class="token punctuation">,</span> arrobject<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> object2<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token function">proxy0</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">public</span> <span class="token function">proxy0</span><span class="token punctuation">(</span>InvocationHandler invocationHandler<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>handler <span class="token operator">=</span> invocationHandler<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>该代理类在创建实例的时候传入了一个<code>InvokerInvocationHandler(invoker)</code>，所以，服务调用时其实最终会调用到<code>InvokerInvocationHandler</code>的<code>invoke</code>方法：</p>
+<pre class="line-numbers language-java"><code class="language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">InvokerInvocationHandler</span> <span class="token keyword">implements</span> <span class="token class-name">InvocationHandler</span> <span class="token punctuation">{</span>
+    <span class="token keyword">private</span> <span class="token keyword">static</span> <span class="token keyword">final</span> Logger logger <span class="token operator">=</span> LoggerFactory<span class="token punctuation">.</span><span class="token function">getLogger</span><span class="token punctuation">(</span>InvokerInvocationHandler<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">private</span> <span class="token keyword">final</span> Invoker<span class="token operator">&lt;</span><span class="token operator">?</span><span class="token operator">></span> invoker<span class="token punctuation">;</span>
+
+    <span class="token keyword">public</span> <span class="token function">InvokerInvocationHandler</span><span class="token punctuation">(</span>Invoker<span class="token operator">&lt;</span><span class="token operator">?</span><span class="token operator">></span> handler<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>invoker <span class="token operator">=</span> handler<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> Object <span class="token function">invoke</span><span class="token punctuation">(</span>Object proxy<span class="token punctuation">,</span> Method method<span class="token punctuation">,</span> Object<span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span> <span class="token keyword">throws</span> Throwable <span class="token punctuation">{</span>
+        String methodName <span class="token operator">=</span> method<span class="token punctuation">.</span><span class="token function">getName</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        Class<span class="token operator">&lt;</span><span class="token operator">?</span><span class="token operator">></span><span class="token punctuation">[</span><span class="token punctuation">]</span> parameterTypes <span class="token operator">=</span> method<span class="token punctuation">.</span><span class="token function">getParameterTypes</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>method<span class="token punctuation">.</span><span class="token function">getDeclaringClass</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">==</span> Object<span class="token punctuation">.</span><span class="token keyword">class</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">return</span> method<span class="token punctuation">.</span><span class="token function">invoke</span><span class="token punctuation">(</span>invoker<span class="token punctuation">,</span> args<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token string">"toString"</span><span class="token punctuation">.</span><span class="token function">equals</span><span class="token punctuation">(</span>methodName<span class="token punctuation">)</span> <span class="token operator">&amp;&amp;</span> parameterTypes<span class="token punctuation">.</span>length <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">return</span> invoker<span class="token punctuation">.</span><span class="token function">toString</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token string">"hashCode"</span><span class="token punctuation">.</span><span class="token function">equals</span><span class="token punctuation">(</span>methodName<span class="token punctuation">)</span> <span class="token operator">&amp;&amp;</span> parameterTypes<span class="token punctuation">.</span>length <span class="token operator">==</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">return</span> invoker<span class="token punctuation">.</span><span class="token function">hashCode</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span><span class="token string">"equals"</span><span class="token punctuation">.</span><span class="token function">equals</span><span class="token punctuation">(</span>methodName<span class="token punctuation">)</span> <span class="token operator">&amp;&amp;</span> parameterTypes<span class="token punctuation">.</span>length <span class="token operator">==</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">return</span> invoker<span class="token punctuation">.</span><span class="token function">equals</span><span class="token punctuation">(</span>args<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+
+        <span class="token keyword">return</span> invoker<span class="token punctuation">.</span><span class="token function">invoke</span><span class="token punctuation">(</span><span class="token function">createInvocation</span><span class="token punctuation">(</span>method<span class="token punctuation">,</span> args<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">recreate</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token keyword">private</span> RpcInvocation <span class="token function">createInvocation</span><span class="token punctuation">(</span>Method method<span class="token punctuation">,</span> Object<span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        RpcInvocation invocation <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">RpcInvocation</span><span class="token punctuation">(</span>method<span class="token punctuation">,</span> args<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">if</span> <span class="token punctuation">(</span>RpcUtils<span class="token punctuation">.</span><span class="token function">hasFutureReturnType</span><span class="token punctuation">(</span>method<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            invocation<span class="token punctuation">.</span><span class="token function">setAttachment</span><span class="token punctuation">(</span>Constants<span class="token punctuation">.</span>FUTURE_RETURNTYPE_KEY<span class="token punctuation">,</span> <span class="token string">"true"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            invocation<span class="token punctuation">.</span><span class="token function">setAttachment</span><span class="token punctuation">(</span>Constants<span class="token punctuation">.</span>ASYNC_KEY<span class="token punctuation">,</span> <span class="token string">"true"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> invocation<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+
+<span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h2 id="服务目录"><a href="#服务目录" class="headerlink" title="服务目录"></a>服务目录</h2><p>服务目录在前面将<code>RegistryProtocol</code>引入的时候已经讲过了，其主要作用是列出所有<code>invoker</code>，下面来看一下依赖关系：<br><img src="/2019/11/21/Dubbo源码分析/DirectoryDependency.png" alt="Directory依赖关系"><br>由上图可见，<code>AbstractDirectory</code>里面实现了list服务列举方法，该方法肯定是一个模板方法，具体实现由子类提供，接下里分析它的两个实现<code>StaticDirectory</code>和<code>RegistryDirectory</code>，顾名思义，<code>StaticDirectory</code>是静态目录服务，<br>即<code>invokers</code>是固定不变的，该目录适用于注册中心，比如有三个注册中心，那么这三个注册中心在运行过程中是不会动态改变的。<code>RegistryDirectory</code>是动态的，具体的<code>invokers</code>会根据服务注册中心的变动而变动。<br><code>StaticDirectory</code>实现很简单，这里不做过多分析，重点分析<code>RegistryDirectory</code>，<code>RegistryDirectory</code>实现了<code>NotifyListener</code>接口，改接口只有一个方法<code>notify</code>，该方法会在<code>ZookeeperRegistry</code>的<code>doSubscribe</code>（即服务订阅）时被注册，<br>在<code>zookeeper</code>注册中心的服务节点变动时异步通知调用，得到更新过后的URL过后，会调用<code>refreshInvoker</code>方法刷新<code>Invoker</code>列表，改方法在服务引入时分析过了，主要就是将URL列表转换成<code>Invoker</code>列表，放到一个MAP中来达到更新<code>invoker</code>的目的。<br>总结：服务目录可以看成是一个<code>List&lt;Invoker&gt;</code>。</p>
+<h2 id="服务路由"><a href="#服务路由" class="headerlink" title="服务路由"></a>服务路由</h2><p>服务路由的作用是根据用户配置的路由规则来筛选服务提供者。比如有这样一条规则：</p>
+<pre><code>host = 10.20.153.10 =&gt; host = 10.20.153.11</code></pre><p>该条规则表示 IP 为 10.20.153.10 的服务消费者只可调用 IP 为 10.20.153.11 机器上的服务，不可调用其他机器上的服务</p>
+<h2 id="服务集群"><a href="#服务集群" class="headerlink" title="服务集群"></a>服务集群</h2><p>集群的工作可以分为两个阶段，第一：服务消费者初始化时创建<code>ClusterInvoker</code>对象，其目的是将<code>Directory</code>包装，伪装成一个<code>invoker</code>返回，第二：服务调用时，这个时候主要是调用<code>AbstractClusterInvoker</code>的<code>invoke</code>方法，该方法又是一个模板方法，<br>最终会调用具体实现类的<code>doInvoke</code>方法，在<code>doInvoke</code>方法中，封装了一些集群容错的机制，就拿缺省的<code>FailoverClusterInvoker</code>来分析，该方式在调用时出现错误，如果是业务异常，则直接抛出，如果不是业务异常，记录异常，然后重试，<br>重试次数可以在<code>retries</code>属性中指定，默认两次，不算第一次。</p>
+<h2 id="负载均衡"><a href="#负载均衡" class="headerlink" title="负载均衡"></a>负载均衡</h2><p>负载均衡是在服务调用过程中被确定的，具体在<code>invoker.invoke</code>方法中被初始化，这里的负载均衡器为<code>LoadBalance$Adaptive</code>，具体使用某个负载均衡器取决于用户配置，默认使用随机算法，这里不深入分析负载均衡算法。</p>
+<h2 id="服务调用过程"><a href="#服务调用过程" class="headerlink" title="服务调用过程"></a>服务调用过程</h2><p>服务调用过程分为两个部分</p>
+<ul>
+<li>消费端发送请求</li>
+<li>服务端接受请求处理<h3 id="消费端发送请求"><a href="#消费端发送请求" class="headerlink" title="消费端发送请求"></a>消费端发送请求</h3>在分析服务调用之前，先来看一下服务请求发送流程图<br><img src="/2019/11/21/Dubbo源码分析/send-request-process.jpg" alt="服务调用请求发送流程图"><br>在前面服务引入创建代理时讲到，客户端是通过代理对象调用发送网络请求的，而代理对象是调用<code>InvokerInvocationHandler</code>的<code>invoke</code>方法，所以，服务调用过程理应从这里开始。<br>该方法中，首先会封装请求参数<code>Invocation</code>对象，然后调用<code>invoker</code>的<code>invoke</code>方法，这里前面分析得出这里的<code>invoker</code>应该是<code>MockClusterInvoker</code>，这里不分析Dubbo的<code>Mock</code>机制，直接调用<code>FailoverClusterInvoker</code>的<code>invoker</code>方法，<br>改方法在父类<code>AbstractClusterInvoker</code>中，在该方法中，主要是初始化了负载均衡器<code>RandomLoadBalance</code>，然后调用<code>FailoverClusterInvoker</code>的<code>doInvoke</code>方法，在该方法中，首先通过负载均衡器拿到一个<code>invoker</code>，这里的<code>invoker</code>是我们在目录服务中<code>RegistryDirectory</code>回调<br><code>notify</code>通知中创建的，这里创建的是<code>DubboInvoker</code>，所以这里调用<code>AbstractInvoker</code>中的<code>invoke</code>方法，然后该方法会调用<code>DubboInvoker</code>的<code>doInvoke</code>方法，当然，这中间会调用一些<code>Filter</code>这里不展开分析。<br>在<code>doInvoke</code>方法中，会拿到<code>ReferenceCountExchangeClient</code>，然后调用<code>request</code>方法，这里的调用链比较长，如下：<pre><code>ReferenceCountExchangeClient.request -&gt; HeaderExchangeClient.request -&gt; HeaderExchangeChannel.request -&gt; HeaderExchangeClient.send -&gt; HeaderExchangeChannel.send -&gt; NettyChannel.send -&gt; NioSocketChannel.writeAndFlush</code></pre>由上面调用链可以看出，最终会通过Netty的channel调用writeAndFlush发送数据，最后将结果返回。当然这里面的数据编解码序列化在这里不展开。</li>
+</ul>
+<h3 id="服务端接受请求处理"><a href="#服务端接受请求处理" class="headerlink" title="服务端接受请求处理"></a>服务端接受请求处理</h3><p>服务端接受请求的入口在<code>NettyServerHandler</code>类中的<code>channelRead</code>方法，先来看一下调用链</p>
+<pre><code>NettyServerHandler.channelRead -&gt; AbstractPeer.received -&gt; MultiMessageHandler.received -&gt; HeartbeatHandler.received -&gt; AllChannelHandler.received(该方法中会创建一个线程去执行) -&gt; ChannelEventRunnable.run
+-&gt; DecodeHandler.received -&gt; HeaderExchangeHandler.received -&gt; HeaderExchangeHandler.handleRequest -&gt; DubboProtocol$1.reply(这里的DubboProtocol$1是ExchangeHandlerAdapter的子类，定义在DubboProtocol中的匿名内部类，该方法中通过channel和invocation获取invoker对象)
+-&gt; DelegateProviderMetaDataInvoker.invoke -&gt; Wrapper1.invokeMethod -&gt; HelloServiceImpl.sayHello</code></pre><p>代码分析到这里，整个服务请求接受处理差不多就调用完了。</p>
+
+            </div>
+            <hr/>
+
+            
+
+            <link rel="stylesheet" type="text/css" href="/libs/share/css/share.min.css">
+
+<div id="article-share">
+    
+    <div class="social-share" data-disabled="qzone" data-wechat-qrcode-helper="<p>微信里点“发现”->“扫一扫”二维码便可查看分享。</p>"></div>
+    
+</div>
+
+<script src="/libs/share/js/social-share.min.js"></script>
+
+            <div class="reprint">
+                <p>
+                    <span class="reprint-tip">
+                        <i class="fa fa-exclamation-circle"></i>&nbsp;&nbsp;转载请注明:
+                    </span>
+                    <a href="http://blog.easyjava.xyz" class="b-link-green">James</a>
+                    <i class="fa fa-angle-right fa-lg fa-fw text-color"></i>
+                    <a href="/2019/11/21/Dubbo源码分析/" class="b-link-green">Dubbo源码分析</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    
+        <link rel="stylesheet" href="/libs/gitalk/gitalk.css">
+<link rel="stylesheet" href="/css/my-gitalk.css">
+
+<div class="card gitalk-card" data-aos="fade-up">
+    <div id="gitalk-container" class="card-content"></div>
+</div>
+
+<script src="/libs/gitalk/gitalk.min.js"></script>
+<script>
+    let gitalk = new Gitalk({
+        clientID: 'a9858e7f3645ea83f878',
+        clientSecret: '71d9c3a127b0215d02928dd47776ba2c72aad2cf',
+        repo: 'james-ok.github.io',
+        owner: 'james-ok',
+        admin: "james-ok",
+        id: '2019-11-21T21-18-50',
+        distractionFreeMode: false  // Facebook-like distraction free mode
+    });
+
+    gitalk.render('gitalk-container');
+</script>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+<article id="prenext-posts" class="prev-next articles">
+    <div class="row article-row">
+        
+        <div class="article col s12 m6" data-aos="fade-up">
+            <div class="article-badge left-badge text-color">
+                <i class="fa fa-chevron-left"></i>&nbsp;上一篇</div>
+            <div class="card">
+                <a href="/2019/11/30/ActiveMQ使用/">
+                    <div class="card-image">
+                        
+                        
+                        <img src="/medias/featureimages/13.jpg" class="responsive-img" alt="ActiveMQ使用">
+                        
+                        <span class="card-title">ActiveMQ使用</span>
+                    </div>
+                </a>
+                <div class="card-content article-content">
+                    <div class="summary">相信大家遇到过这样的场景，用户注册这个简单的功能里面集成了太多不是很重要步骤，但又不得不做。比如发送邮件、发放优惠券、发送推销短信、记录日志，这样就导致了我们注册功能特别繁重，极大的拉低了接口性能，给用户带来体验度大大降低，明明就一个注册用</div>
+                    <div class="publish-info">
+                        <span class="publish-date">
+                            <i class="fa fa-clock-o fa-fw icon-date"></i>2019-11-30
+                        </span>
+                        <span class="publish-author">
+                            
+                            <i class="fa fa-bookmark fa-fw icon-category"></i>
+                            
+                            <a href="/categories/ActiveMQ/" class="post-category" target="_blank">
+                                    ActiveMQ
+                                </a>
+                            
+                            
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="card-action article-tags">
+                    
+                    <a href="/tags/ActiveMQ/" target="_blank">
+                        <span class="chip bg-color">ActiveMQ</span>
+                    </a>
+                    
+                    <a href="/tags/JMS/" target="_blank">
+                        <span class="chip bg-color">JMS</span>
+                    </a>
+                    
+                </div>
+                
+            </div>
+        </div>
+        
+        
+        <div class="article col s12 m6" data-aos="fade-up">
+            <div class="article-badge right-badge text-color">
+                下一篇&nbsp;<i class="fa fa-chevron-right"></i>
+            </div>
+            <div class="card">
+                <a href="/2019/11/14/Spring事务的传播性及隔离级别/">
+                    <div class="card-image">
+                        
+                        
+                        <img src="/medias/featureimages/20.jpg" class="responsive-img" alt="Spring事务的传播性及隔离级别">
+                        
+                        <span class="card-title">Spring事务的传播性及隔离级别</span>
+                    </div>
+                </a>
+                <div class="card-content article-content">
+                    <div class="summary">开发中我们对事务并不陌生，但大多数开发者对事务的传播性以及Spring的事务传播性模棱两可，今天就来梳理一下
+什么是事务？保证业务（一系列对数据库增删改操作）的原子性，原子：表示不可分割，要么存在要么不存在，是一个最小单位。那么事务就是一批</div>
+                    <div class="publish-info">
+                            <span class="publish-date">
+                                <i class="fa fa-clock-o fa-fw icon-date"></i>2019-11-14
+                            </span>
+                        <span class="publish-author">
+                            
+                            <i class="fa fa-bookmark fa-fw icon-category"></i>
+                            
+                            <a href="/categories/Spring/" class="post-category" target="_blank">
+                                    Spring
+                                </a>
+                            
+                            
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="card-action article-tags">
+                    
+                    <a href="/tags/事务/" target="_blank">
+                        <span class="chip bg-color">事务</span>
+                    </a>
+                    
+                    <a href="/tags/Spring/" target="_blank">
+                        <span class="chip bg-color">Spring</span>
+                    </a>
+                    
+                </div>
+                
+            </div>
+        </div>
+        
+    </div>
+</article>
+</div>
+
+
+<script>
+    $('#articleContent').on('copy', function (e) {
+        // IE8 or earlier browser is 'undefined'
+        if (typeof window.getSelection === 'undefined') return;
+
+        var selection = window.getSelection();
+        // if the selection is short let's not annoy our users.
+        if (('' + selection).length < Number.parseInt('120')) {
+            return;
+        }
+
+        // create a div outside of the visible area and fill it with the selected text.
+        var bodyElement = document.getElementsByTagName('body')[0];
+        var newdiv = document.createElement('div');
+        newdiv.style.position = 'absolute';
+        newdiv.style.left = '-99999px';
+        bodyElement.appendChild(newdiv);
+        newdiv.appendChild(selection.getRangeAt(0).cloneContents());
+
+        // we need a <pre> tag workaround.
+        // otherwise the text inside "pre" loses all the line breaks!
+        if (selection.getRangeAt(0).commonAncestorContainer.nodeName === 'PRE') {
+            newdiv.innerHTML = "<pre>" + newdiv.innerHTML + "</pre>";
+        }
+
+        var url = document.location.href;
+        newdiv.innerHTML += '<br />'
+            + '来源: James<br />'
+            + '作者: James<br />'
+            + '链接: <a href="' + url + '">' + url + '</a><br />'
+            + '本文章著作权归作者所有，任何形式的转载都请注明出处。';
+
+        selection.selectAllChildren(newdiv);
+        window.setTimeout(function () {bodyElement.removeChild(newdiv);}, 200);
+    });
+</script>
+
+    </div>
+    <div class="col l3 hide-on-med-and-down">
+        <div class="toc-widget">
+            <div class="toc-title"><i class="fa fa-list-alt"></i>&nbsp;&nbsp;目录</div>
+            <div id="toc-content"></div>
+        </div>
+    </div>
+</div>
+
+<script src="/libs/tocbot/tocbot.min.js"></script>
+<script>
+    $(function () {
+        tocbot.init({
+            tocSelector: '#toc-content',
+            contentSelector: '#articleContent',
+            headingsOffset: -($(window).height() * 0.4 - 45),
+            // headingsOffset: -205,
+            headingSelector: 'h2, h3, h4'
+        });
+
+        // modify the toc link href to support Chinese.
+        let i = 0;
+        let tocHeading = 'toc-heading-';
+        $('#toc-content a').each(function () {
+            $(this).attr('href', '#' + tocHeading + (++i));
+        });
+
+        // modify the heading title id to support Chinese.
+        i = 0;
+        $('#articleContent').children('h2, h3, h4').each(function () {
+            $(this).attr('id', tocHeading + (++i));
+        });
+
+        // Set scroll toc fixed.
+        let tocHeight = parseInt($(window).height() * 0.4 - 64);
+        let $tocWidget = $('.toc-widget');
+        $(window).scroll(function () {
+            let scroll = $(window).scrollTop();
+            /* add post toc fixed. */
+            if (scroll > tocHeight) {
+                $tocWidget.addClass('toc-fixed');
+            } else {
+                $tocWidget.removeClass('toc-fixed');
+            }
+        });
+    });
+</script>
+    
+
+</main>
+
+
+<footer class="page-footer bg-color">
+    <div class="container row center-align">
+        <div class="col s12 m8 l8 copy-right">
+            本站由&copy;<a href="blog.easyjava.xyz" target="_blank">James</a>基于
+            <a href="https://hexo.io/" target="_blank">Hexo</a> 的
+            <a href="https://github.com/blinkfox/hexo-theme-matery" target="_blank">hexo-theme-matery</a>主题搭建.
+
+            
+                &nbsp;<i class="fa fa-area-chart"></i>&nbsp;站点总字数:&nbsp;
+                <span class="white-color">50k</span>
+            
+
+            
+			
+                <br>
+                
+                <span id="busuanzi_container_site_pv">
+                    <i class="fa fa-heart-o"></i>
+                    本站总访问量 <span id="busuanzi_value_site_pv" class="white-color"></span>
+                </span>
+                
+                
+                <span id="busuanzi_container_site_uv">
+                    <i class="fa fa-users"></i>
+                    次,&nbsp;访客数 <span id="busuanzi_value_site_uv" class="white-color"></span> 人.
+                </span>
+                
+            
+        </div>
+        <div class="col s12 m4 l4 social-link social-statis">
+    <a href="https://github.com/james-ok" class="tooltipped" target="_blank" data-tooltip="访问我的GitHub" data-position="top" data-delay="50">
+        <i class="fa fa-github"></i>
+    </a>
+
+
+
+    <a href="mailto:vip.dujuncheng@foxmail.com" class="tooltipped" target="_blank" data-tooltip="邮件联系我" data-position="top" data-delay="50">
+        <i class="fa fa-envelope-open"></i>
+    </a>
+
+
+
+    <a href="tencent://AddContact/?fromId=50&fromSubId=1&subcmd=all&uin=1261100508" class="tooltipped" data-tooltip="QQ联系我: 1261100508" data-position="top" data-delay="50">
+        <i class="fa fa-qq"></i>
+    </a>
+
+
+</div>
+    </div>
+</footer>
+
+<div class="progress-bar"></div>
+
+
+<!-- 搜索遮罩框 -->
+<div id="searchModal" class="modal">
+    <div class="modal-content">
+        <div class="search-header">
+            <span class="title"><i class="fa fa-search"></i>&nbsp;&nbsp;搜索</span>
+            <input type="search" id="searchInput" name="s" placeholder="请输入搜索的关键字"
+                   class="search-input" autofocus="">
+        </div>
+        <div id="searchResult"></div>
+    </div>
+</div>
+
+<script src="/js/search.js"></script>
+<script type="text/javascript">
+    searchFunc("/" + "search.xml", 'searchInput', 'searchResult');
+</script>
+<!-- 回到顶部按钮 -->
+<div id="backTop" class="top-scroll">
+    <a class="btn-floating btn-large waves-effect waves-light" href="#!">
+        <i class="fa fa-angle-up"></i>
+    </a>
+</div>
+
+
+<script src="/libs/materialize/js/materialize.min.js"></script>
+<script src="/libs/masonry/masonry.pkgd.min.js"></script>
+<script src="/libs/aos/aos.js"></script>
+<script src="/libs/scrollprogress/scrollProgress.min.js"></script>
+<script src="/libs/lightGallery/js/lightgallery-all.min.js"></script>
+<script src="/js/matery.js"></script>
+
+<!-- Global site tag (gtag.js) - Google Analytics -->
+
+
+
+    <script src="/libs/others/clicklove.js"></script>
+
+
+    <script async src="/libs/others/busuanzi.pure.mini.js"></script>
+
+
+</body>
+</html>

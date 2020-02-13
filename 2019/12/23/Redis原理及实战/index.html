@@ -1,0 +1,949 @@
+<!DOCTYPE HTML>
+<html lang="zh-CN">
+
+
+<head><meta name="generator" content="Hexo 3.9.0">
+    <meta charset="utf-8">
+    <meta name="keywords" content="Redis原理及实战, james-ok,github">
+    <meta name="description" content="相信大家对Redis并不陌生，我们在做数据缓存、分布式锁、分布式事务等业务中经常会见到Redis的身影，今天带大家来深入了解一下Redis的原理以及在实际应用场景中的使用。
+初识RedisRedis可以看成是NoSQL数据库，也可以看成是缓">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="renderer" content="webkit|ie-stand|ie-comp">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Redis原理及实战 | James</title>
+    <link rel="icon" type="image/png" href="/favicon.png">
+
+    <link rel="stylesheet" type="text/css" href="/libs/awesome/css/font-awesome.min.css">
+    <link rel="stylesheet" type="text/css" href="/libs/materialize/css/materialize.min.css">
+    <link rel="stylesheet" type="text/css" href="/libs/aos/aos.css">
+    <link rel="stylesheet" type="text/css" href="/libs/animate/animate.min.css">
+    <link rel="stylesheet" type="text/css" href="/libs/lightGallery/css/lightgallery.min.css">
+    <link rel="stylesheet" type="text/css" href="/css/matery.css">
+    <link rel="stylesheet" type="text/css" href="/css/my.css">
+    <style type="text/css">
+        
+        code[class*="language-"], pre[class*="language-"] {
+            white-space: pre !important;
+        }
+        
+    </style>
+
+    <script src="/libs/jquery/jquery-2.2.0.min.js"></script>
+<link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css">
+<link rel="stylesheet" href="/css/prism-line-numbers.css" type="text/css"></head>
+
+
+<body>
+
+<header class="navbar-fixed">
+    <nav id="headNav" class="bg-color nav-transparent">
+        <div id="navContainer" class="container">
+            <div class="nav-wrapper">
+                <div class="brand-logo">
+                    <a href="/" class="waves-effect waves-light">
+                        
+                        <img src="/medias/logo.png" class="logo-img hide-on-small-only">
+                        
+                        <span class="logo-span">James</span>
+                    </a>
+                </div>
+                
+
+<a href="#" data-activates="mobile-nav" class="button-collapse"><i class="fa fa-navicon"></i></a>
+<ul class="right">
+    
+    <li class="hide-on-med-and-down">
+        <a href="/" class="waves-effect waves-light">
+            
+            <i class="fa fa-home"></i>
+            
+            <span>首页</span>
+        </a>
+    </li>
+    
+    <li class="hide-on-med-and-down">
+        <a href="/tags" class="waves-effect waves-light">
+            
+            <i class="fa fa-tags"></i>
+            
+            <span>标签</span>
+        </a>
+    </li>
+    
+    <li class="hide-on-med-and-down">
+        <a href="/categories" class="waves-effect waves-light">
+            
+            <i class="fa fa-bookmark"></i>
+            
+            <span>分类</span>
+        </a>
+    </li>
+    
+    <li class="hide-on-med-and-down">
+        <a href="/archives" class="waves-effect waves-light">
+            
+            <i class="fa fa-archive"></i>
+            
+            <span>归档</span>
+        </a>
+    </li>
+    
+    <li class="hide-on-med-and-down">
+        <a href="/about" class="waves-effect waves-light">
+            
+            <i class="fa fa-user-circle-o"></i>
+            
+            <span>关于</span>
+        </a>
+    </li>
+    
+    <li class="hide-on-med-and-down">
+        <a href="/friends" class="waves-effect waves-light">
+            
+            <i class="fa fa-address-book"></i>
+            
+            <span>友情链接</span>
+        </a>
+    </li>
+    
+    <li>
+        <a id="toggleSearch" class="waves-effect waves-light">
+            <i id="searchIcon" class="mdi-action-search" title="搜索"></i>
+        </a>
+    </li>
+
+</ul>
+
+<div class="side-nav" id="mobile-nav">
+
+    <div class="mobile-head bg-color">
+        
+        <img src="/medias/logo.png" class="logo-img circle responsive-img">
+        
+        <div class="logo-name">James</div>
+        <div class="logo-desc">
+            
+            人生苦短，若虚度年华，则短暂的人生就太长了。 —— 莎士比亚
+            
+        </div>
+    </div>
+
+    
+
+    <ul class="menu-list mobile-menu-list">
+        
+        <li>
+            <a href="/" class="waves-effect waves-light">
+                
+                <i class="fa fa-fw fa-home"></i>
+                
+                首页
+            </a>
+        </li>
+        
+        <li>
+            <a href="/tags" class="waves-effect waves-light">
+                
+                <i class="fa fa-fw fa-tags"></i>
+                
+                标签
+            </a>
+        </li>
+        
+        <li>
+            <a href="/categories" class="waves-effect waves-light">
+                
+                <i class="fa fa-fw fa-bookmark"></i>
+                
+                分类
+            </a>
+        </li>
+        
+        <li>
+            <a href="/archives" class="waves-effect waves-light">
+                
+                <i class="fa fa-fw fa-archive"></i>
+                
+                归档
+            </a>
+        </li>
+        
+        <li>
+            <a href="/about" class="waves-effect waves-light">
+                
+                <i class="fa fa-fw fa-user-circle-o"></i>
+                
+                关于
+            </a>
+        </li>
+        
+        <li>
+            <a href="/friends" class="waves-effect waves-light">
+                
+                <i class="fa fa-fw fa-address-book"></i>
+                
+                友情链接
+            </a>
+        </li>
+        
+        
+        <li><div class="divider"></div></li>
+        <li>
+            <a href="https://github.com/james-ok" class="waves-effect waves-light" target="_blank">
+                <i class="fa fa-github-square fa-fw"></i>Fork Me
+            </a>
+        </li>
+        
+    </ul>
+
+    <div class="social-link">
+    <a href="https://github.com/james-ok" class="tooltipped" target="_blank" data-tooltip="访问我的GitHub" data-position="top" data-delay="50">
+        <i class="fa fa-github"></i>
+    </a>
+
+
+
+    <a href="mailto:vip.dujuncheng@foxmail.com" class="tooltipped" target="_blank" data-tooltip="邮件联系我" data-position="top" data-delay="50">
+        <i class="fa fa-envelope-open"></i>
+    </a>
+
+
+
+    <a href="tencent://AddContact/?fromId=50&fromSubId=1&subcmd=all&uin=1261100508" class="tooltipped" data-tooltip="QQ联系我: 1261100508" data-position="top" data-delay="50">
+        <i class="fa fa-qq"></i>
+    </a>
+
+
+</div>
+</div>
+
+            </div>
+        </div>
+
+        
+        <style>
+    .nav-transparent .github-corner {
+        display: none !important;
+    }
+
+    .github-corner {
+        position: absolute;
+        z-index: 10;
+        top: 0;
+        right: 0;
+        border: 0;
+        transform: scale(1.1);
+    }
+
+    .github-corner svg {
+        color: #0f9d58;
+        fill: #fff;
+        height: 64px;
+        width: 64px;
+    }
+
+    .github-corner:hover .octo-arm {
+        animation: a 0.56s ease-in-out;
+    }
+
+    .github-corner .octo-arm {
+        animation: none;
+    }
+
+    @keyframes a {
+        0%,
+        to {
+            transform: rotate(0);
+        }
+        20%,
+        60% {
+            transform: rotate(-25deg);
+        }
+        40%,
+        80% {
+            transform: rotate(10deg);
+        }
+    }
+</style>
+
+<a href="https://github.com/james-ok" class="github-corner tooltipped hide-on-med-and-down" target="_blank"
+   data-tooltip="Fork Me" data-position="left" data-delay="50">
+    <svg viewBox="0 0 250 250" aria-hidden="true">
+        <path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path>
+        <path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2"
+              fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path>
+        <path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z"
+              fill="currentColor" class="octo-body"></path>
+    </svg>
+</a>
+        
+    </nav>
+</header>
+
+
+
+
+
+<div class="bg-cover post-cover" style="background-image: url('/medias/featureimages/22.jpg')">
+    <div class="container">
+        <div class="row">
+            <div class="col s12 m12 l12">
+                <div class="brand">
+                    <div class="description center-align post-title">
+                        Redis原理及实战
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<main class="post-container content">
+
+    
+    <link rel="stylesheet" href="/libs/tocbot/tocbot.css">
+<style>
+    #articleContent h1::before,
+    #articleContent h2::before,
+    #articleContent h3::before,
+    #articleContent h4::before,
+    #articleContent h5::before,
+    #articleContent h6::before {
+        display: block;
+        content: " ";
+        height: 100px;
+        margin-top: -100px;
+        visibility: hidden;
+    }
+
+    #articleContent :focus {
+        outline: none;
+    }
+
+    .toc-fixed {
+        position: fixed;
+        top: 64px;
+    }
+
+    .toc-widget {
+        padding-left: 20px;
+    }
+
+    .toc-widget .toc-title {
+        margin: 35px 0 15px 0;
+        padding-left: 17px;
+        font-size: 1.5rem;
+        font-weight: bold;
+        line-height: 1.5rem;
+    }
+
+    .toc-widget ol {
+        padding: 0;
+        list-style: none;
+    }
+
+    #toc-content ol {
+        padding-left: 10px;
+    }
+
+    #toc-content ol li {
+        padding-left: 10px;
+    }
+
+    #toc-content .toc-link:hover {
+        color: #42b983;
+        font-weight: 700;
+        text-decoration: underline;
+    }
+
+    #toc-content .toc-link::before {
+        background-color: transparent;
+        max-height: 25px;
+    }
+
+    #toc-content .is-active-link {
+        color: #42b983;
+    }
+
+    #toc-content .is-active-link::before {
+        background-color: #42b983;
+    }
+</style>
+<div class="row">
+    <div class="col s12 m12 l9">
+        <!-- 文章内容详情 -->
+<div id="artDetail">
+    <div class="card">
+        <div class="card-content article-info">
+            <div class="row tag-cate">
+                <div class="col s7">
+                    
+                    <div class="article-tag">
+                        
+                            <a href="/tags/Redis/" target="_blank">
+                                <span class="chip bg-color">Redis</span>
+                            </a>
+                        
+                            <a href="/tags/Jedis/" target="_blank">
+                                <span class="chip bg-color">Jedis</span>
+                            </a>
+                        
+                    </div>
+                    
+                </div>
+                <div class="col s5 right-align">
+                    
+                    <div class="post-cate">
+                        <i class="fa fa-bookmark fa-fw icon-category"></i>
+                        
+                            <a href="/categories/Redis/" class="post-category" target="_blank">
+                                Redis
+                            </a>
+                        
+                    </div>
+                    
+                </div>
+            </div>
+
+            <div class="post-info">
+                <div class="post-date info-break-policy">
+                    <i class="fa fa-calendar-minus-o fa-fw"></i>发布日期:&nbsp;&nbsp;
+                    2019-12-23
+                </div>
+
+                
+                    
+                    <div class="info-break-policy">
+                        <i class="fa fa-file-word-o fa-fw"></i>文章字数:&nbsp;&nbsp;
+                        6.6k
+                    </div>
+                    
+
+                    
+                    <div class="info-break-policy">
+                        <i class="fa fa-clock-o fa-fw"></i>阅读时长:&nbsp;&nbsp;
+                        23 分
+                    </div>
+                    
+                
+				
+				
+                    <div id="busuanzi_container_page_pv" class="info-break-policy">
+                        <i class="fa fa-eye fa-fw"></i>阅读次数:&nbsp;&nbsp;
+                        <span id="busuanzi_value_page_pv"></span>
+                    </div>
+				
+            </div>
+        </div>
+        <hr class="clearfix">
+        <div class="card-content article-card-content">
+            <div id="articleContent">
+                <p>相信大家对Redis并不陌生，我们在做数据缓存、分布式锁、分布式事务等业务中经常会见到Redis的身影，今天带大家来深入了解一下Redis的原理以及在实际应用场景中的使用。</p>
+<h2 id="初识Redis"><a href="#初识Redis" class="headerlink" title="初识Redis"></a>初识Redis</h2><p>Redis可以看成是NoSQL数据库，也可以看成是缓存中间件，Redis缺省有16（分别是0-15）个库，每个库中包含多个key，每个key对应的数据类型有五种，分别是String、List、Hash、Set、SortSet</p>
+<h3 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h3><ul>
+<li><a href="http://download.redis.io/releases/redis-5.0.7.tar.gz" target="_blank" rel="noopener">下载</a> 注意：第二位数字为偶数则代表稳定版，奇数为非稳定版</li>
+<li>解压：<code>tar -zxvf redis-5.0.7.tar.gz</code></li>
+<li>进入Redis目录：<code>cd redis-5.0.7</code></li>
+<li>编译：<code>make</code> 注意：这里或许会报错，根据提示安装依赖的库即可解决，例如gcc</li>
+<li>测试编译：<code>make test</code></li>
+<li>安装：<code>make install {PREFIX=/path}</code></li>
+</ul>
+<h2 id="Redis数据类型"><a href="#Redis数据类型" class="headerlink" title="Redis数据类型"></a>Redis数据类型</h2><p>Redis支持五种数据类型，分别是String、List、Hash、Set、SortSet，五种类型的特性如下：</p>
+<h3 id="String-字符串"><a href="#String-字符串" class="headerlink" title="String(字符串)"></a>String(字符串)</h3><p>字符串是Redis中最基本的数据类型，它能存储任何字符数据，例如JSON，Base64编码的图片等，String最大支持存储512M的字符数据。</p>
+<h4 id="内部数据结构"><a href="#内部数据结构" class="headerlink" title="内部数据结构"></a>内部数据结构</h4><p>String支持三种数据类型，分别是int、浮点数据和字符数据，int数据类型使用int存储，浮点数据和字符数据使用SDS（Simple Dynamic String）存储，SDS是在C的标准字符串结构上作了封装，Redis3.2<br>有五种sdshdr类型，目的是根据存储的字符串长度选择不同的sdshdr，不同的sdshdr占用的内存大小各有不同，这样就达到了节省内存开销的目的。</p>
+<h3 id="List-列表"><a href="#List-列表" class="headerlink" title="List(列表)"></a>List(列表)</h3><p>List列表是一个有序的字符串列表，由于List底层采用的是双向链表的数据结构，所以不管List列表中的数据有多大，向列表的两端存取数据都是很快的，常用操作也是向列表的两端存取数据。</p>
+<h4 id="内部数据结构-1"><a href="#内部数据结构-1" class="headerlink" title="内部数据结构"></a>内部数据结构</h4><p>在3.2之前，List中元素个数较少或者单个元素长度较小的时候，采用ZipList数据接口存储数据，当List中元素个数或者单个元素长度较大的时候，就会采用LinkedList存储。这两种数据结构各有<br>优缺点，LinkedList在两端数据的存储复杂度较低，但是内存开销比较大；ZipList内存开销比较小，但是插入和删除需要频繁申请内存。<br>在3.2之后，Redis在数据存储结构上做了优化，采用QuickList数据结构，QuickList其实是LinkedList和ZipList数据结构的整合，QuickList任然是一个LinkedList，只是每个元素都是一个ZipList，<br>每个元素都能存储多个数据元素；即QuickList是多个ZipList组成的LinkedList</p>
+<h3 id="Hash-可以认为是Java中的Map"><a href="#Hash-可以认为是Java中的Map" class="headerlink" title="Hash(可以认为是Java中的Map)"></a>Hash(可以认为是Java中的Map)</h3><p>Hash可以看成是Java中的Map，由一个Sting类型的key和多个String类型的field和value组成。适合存储对象。</p>
+<h4 id="内部数据结构-2"><a href="#内部数据结构-2" class="headerlink" title="内部数据结构"></a>内部数据结构</h4><p>Hash底层数据结构可以使用ZipList和HashTable，当Hash中field和value的字符串长度都小于64字节，一个Hash的field和value的个数小于512个时，使用ZipList数据结构存储</p>
+<h3 id="Set-集合"><a href="#Set-集合" class="headerlink" title="Set(集合)"></a>Set(集合)</h3><p>Set存储一个无序不能重复的元素集合，最多可以存储232-1个元素，集合和列表的最大区别就是唯一性和有序性。</p>
+<h4 id="内部数据结构-3"><a href="#内部数据结构-3" class="headerlink" title="内部数据结构"></a>内部数据结构</h4><p>Set底层数据结构有IntSet和HashTable，当所有元素是int类型时，这使用IntSet，否则使用HashTable（只用Key，Value为null）</p>
+<h3 id="SortSet-有序集合"><a href="#SortSet-有序集合" class="headerlink" title="SortSet(有序集合)"></a>SortSet(有序集合)</h3><p>SortSet和Set的区别就是增加了排序功能，在集合的基础上，有序集合为集合中的每个元素绑定了一个score（分数）。有序集合中的元素和集合一样是唯一的，但是元素的score是可以重复的。<br>我们可以通过score进行排序，查找，删除等操作。</p>
+<h4 id="内部数据结构-4"><a href="#内部数据结构-4" class="headerlink" title="内部数据结构"></a>内部数据结构</h4><p>SortSet采用ZipList或者SkipList+HashTable数据结构存储数据。</p>
+<h2 id="Redis过期时间"><a href="#Redis过期时间" class="headerlink" title="Redis过期时间"></a>Redis过期时间</h2><p>Redis中可以为一个key设置一个过期时间，当设置了过期时间的key到期过后会被删除。<br>在Redis中，为某个key设置过期时间有三种方式：</p>
+<ol>
+<li><code>EXPIRE key seconds</code>:为key设置过期时间，单位为妙，返回值1表示设置成功，0表示失败（例如：键不存在）。</li>
+<li><code>PEXPIRE key millis</code>:为key设置过期时间，单位为毫秒</li>
+<li><code>setex key seconds value</code>:该方式为字符串独有，设置key的过期时间，单位为秒<br>查看一个key的有效期使用<code>TTL key</code>或者<code>PTTL key</code>，两种方式分别对应<code>EXPIRE</code>和<code>PEXPIRE</code>两种方式设置的过期时间。如果<code>TTL</code>或者<code>PTTL</code>返回-2，则表示键不存在，-1则表示没有设置过期时间，其他数字<br>则表示过期剩余时间。<br>如果想让某个设置了过期时间的key恢复成持久的key，可以使用<code>PERSIST key</code>，成功返回1，失败返回0.</li>
+</ol>
+<h3 id="过期删除原理"><a href="#过期删除原理" class="headerlink" title="过期删除原理"></a>过期删除原理</h3><p>在Redis中，对于已经过期的key的删除有两种方式，如下：</p>
+<ol>
+<li>积极方式：采用随机抽取算法，周期性的对已经设置了过期时间的key随机抽取一批key，将已经过期的key进行删除，该方式有一个缺陷，并不能确保所有过期的key被删除。具体流程如下：<ol>
+<li>随机抽取20个带有timeout的key</li>
+<li>将已经过期的key进行删除</li>
+<li>如果被删除（已过期）的key超过抽取总数的25%（5个），则重复执行该操作</li>
+</ol>
+</li>
+<li>消极方式：当key被访问的时候判断是否过期，如果过期则删除它，该方式有一个缺陷，对于没有被查询到的已经过期的key，会常住内存。<br>Redis采用以上两种过期删除方式来互补，达到过期key的删除逻辑。</li>
+</ol>
+<h2 id="发布-订阅（publish-subscribe）"><a href="#发布-订阅（publish-subscribe）" class="headerlink" title="发布/订阅（publish/subscribe）"></a>发布/订阅（publish/subscribe）</h2><p>Redis提供发布/订阅的功能，可以在多个进程之间进行消息通信。<code>PUBLISH channel.1 message</code>表示向channel.1发送了一条消息，内容为message，该命令返回一个数值，表示订阅了当前channel<br>的订阅者数量，当返回0的时候表示该channel没有订阅者；订阅者使用<code>SUBSCRIBE channel.1 channel.2 ...</code>订阅channel.1，一个channel可以有多个订阅者，一个消费者也可以订阅多个消息，当发送者发送一条<br>详细到一个channel，该channel中的所有订阅者都会受到该条消息。需要注意的是：发送到channel中的消息不会持久化，也就是说，订阅者只能收到订阅过后的消息，订阅之前该channel所产生的消息不能收到。<br>channel可以分为两类，普通的channel和Pattern Channel（规则匹配），例如：现在有两个channel，分别是普通channel <code>abc</code>和Pattern Channel <code>*bc</code>，发送者向abc中发送一条消息<code>PUBLISH abc hello</code>,<br>首先<code>abc</code>这个channel能收到一条消息hello，<code>*bc</code>也能匹配到abc这个channel，所以<code>*bc</code>也能收到这条消息hello。</p>
+<h2 id="Redis数据的持久化"><a href="#Redis数据的持久化" class="headerlink" title="Redis数据的持久化"></a>Redis数据的持久化</h2><p>在Redis中，数据的持久化有两种方式</p>
+<ul>
+<li>RDB：Fork一个子进程根据配置的规则定时的将内存中的数据写入到磁盘中。</li>
+<li>AOF(Append Only File)：每次执行过后将命令追加到AOF文件中，类似于MySQL的binlog。</li>
+</ul>
+<h3 id="RDB"><a href="#RDB" class="headerlink" title="RDB"></a>RDB</h3><p>当符合RDB持久化条件时，Redis会Fork和主进程一样的子进程，先将内存中的所有数据写入到一个临时文件中，当内存中的所有数据都写入完毕过后，再将之前的备份文件替换。该方式的缺点是最后一次持久化<br>过后的数据有可能会丢失，也就是说，两次数据的持久化间隔产生的数据有可能丢失。<br>什么叫符合RDB持久化条件呢？</p>
+<ul>
+<li>当满足配置文件的规则时：在redis.conf文件中配置<code>save 900 1</code>,<code>save 300 10</code>,<code>save 60 10000</code>，以上配置，save后面的第一个参数表示时间（单位秒），第二个表示键的个数，并且满足以上任意<br>一个配置都会执行，以上配置表示的意思就是：当900秒内有一个键发送变动或者300秒内有10个键发生变动或者60秒内有10000个键发生变动都会触发RDB快照。</li>
+<li>客户端发送了SAVE或者BGSAVE命令：当我们需要对Redis服务进行重启的时候，我们可以操作SAVE或者BGSAVE命令手动执行RDB快照，SAVE和BGSAVE命令的区别在于，一个是同步执行，一个是异步执行，<br>同步执行会阻塞其他客户端的请求，而BGSAVE则不会阻塞。我们还可以通过LASTSAVE命令来查看最后一次执行RDB快照的时间。</li>
+<li>客户端发送了FLUSHALL命令：该操作依赖配置规则，如果没有配置RDB的执行规则，该命令也不会触发RDB快照的执行。</li>
+<li>执行复制（Replication）：该操作一般指在主从模式下，Redis会在复制初始时执行RDB快照。</li>
+</ul>
+<h3 id="AOF"><a href="#AOF" class="headerlink" title="AOF"></a>AOF</h3><p>当我们的业务需求对Redis的使用不限于缓存时，可能会使用Redis存储一些比较重要的数据，这个时候我们可以开启AOF来降低RDB持久化方式对内存数据的丢失，当然，开启AOF对Redis对外提供服务的性能<br>是有一定的影响的，但是这种影响一般能接受，解决办法可以使用一些写入性能较高的磁盘。默认情况下，Redis并没有开启AOF持久化方式，我们可以在配置文件中配置AOF是否开启。<code>appendonly yes</code>将<br>appendonly属性值改为yes，则表示开启AOF持久化。还可以指定AOF持久化到磁盘的文件名称<code>appendfilename &quot;appendonly.aof&quot;</code>。<br>查看appendonly.aof文件，我们可以发现，里面保存了客户端操作Redis的所有事务操作（增删改）命令，但其实有的时候我们对Redis的操作是针对同一个key的，也就是说，其实真正有用的数据是最新<br>存在于内存中的数据，而AOF持久化文件则保存了各个key的变动轨迹，有很多命令轨迹是没有用的，所以这个时候需要对这样一个问题进行优化。<br>Redis也考虑到了这一点，我们可以通过配置的方式来解决这一问题，在redis.conf配置文件中配置<code>auto-aof-rewrite-percentage 100</code>和<code>auto-aof-rewrite-min-size 64mb</code>。</p>
+<ul>
+<li><code>auto-aof-rewrite-percentage 100</code>:表示当前AOF文件的大小超过上一次重写AOF文件大小的百分之多少时会再次执行重写，如果之前没有重写过，则以启动时AOF文件的大小为准。</li>
+<li><code>auto-aof-rewrite-min-size 64mb</code>:表示限制允许重写最小AOF文件的大小。<br>当然我们也可以通过手动执行<code>BGREWRITEAOF</code>命令的方式让AOF文件重写。<br>AOF方式的数据恢复会一个一个将AOF文件中的命令在Redis服务器上执行，性能上会比RDB方式慢。</li>
+</ul>
+<h4 id="AOF重写原理"><a href="#AOF重写原理" class="headerlink" title="AOF重写原理"></a>AOF重写原理</h4><p>同样的，为了不影响对外提供服务，AOF重写时主进程会Fork一个子进程来执行，该操作并不是和之前AOF追加的方式，而是类似于RDB的方式，将内存中的数据遍历出来，然后解析成set命令保存到AOF文件中，<br>在这期间，由于Redis还持续对外提供服务，那么在期间客户端发送的操作执行该如何保证数据同步呢，Redis的解决方案是在执行AOF重写的过程中，主进程接受到的所有客户端的事务操作会缓存到<br><code>aof_rewrite_buf</code>缓存（单独开辟一块内存空间来存储执行AOF重写期间收到的客户端命令）中，当重写操作执行完成过后，在将<code>aof_rewrite_buf</code>缓存中将所有命令追加到重写过后的文件中，<br>当然这个文件也是一个临时文件，当以上操作都执行完毕过后，Redis会把之前旧的AOF文件替换，这样做的好处在于，就算在AOF重写时失败了，也不会影响之前已经持久化的AOF文件。</p>
+<h2 id="Redis的内存回收策略"><a href="#Redis的内存回收策略" class="headerlink" title="Redis的内存回收策略"></a>Redis的内存回收策略</h2><p>内存是有限且昂贵的，Redis作为一个内存缓存中间件，必须要考虑如何合理有效的使用内存空间。例如：当内存不足时，如何保证Redis程序的正常运行。Redis提供多种内存回收策略，当内存不足时，Redis<br>为了保证持续的对外提供服务，根据不同的策略淘汰一些对象，来达到Redis的可靠性。那么Redis有哪些淘汰策略？</p>
+<ul>
+<li>allkeys-lru:从数据集中挑选最近最少使用的key淘汰，该方式适用于缓冲中的数据都是热点数据</li>
+<li>allkeys-random:随机选择一些key进行淘汰，该方式适用于如果我们应用对缓冲key访问的概率相等</li>
+<li>volatile-lru:从已经设置了过期时间的数据集中挑选最近最少使用的key进行淘汰</li>
+<li>volatile-random:从已经设置了过期时间的数据集中随机挑选一些key进行淘汰</li>
+<li>volatile-ttl:从已经设置了过期时间的数据集中选择快要过期的key进行淘汰<br>注意：Redis中的LRU算法并不是真正意义上的LRU算法，是采用抽样的LRU算法，在一定程度上接近真正LRU算法。</li>
+</ul>
+<h2 id="单线程的Redis在性能上为什么这么突出"><a href="#单线程的Redis在性能上为什么这么突出" class="headerlink" title="单线程的Redis在性能上为什么这么突出"></a>单线程的Redis在性能上为什么这么突出</h2><p>首先来说为什么使用单线程，我们知道多线程主要是对CPU资源的最大化使用，而Redis的性能瓶颈并不在CPU，而是在于内存和网络。为了在单线程模式下性能达到更高，Redis采用IO多路复用的解决方案<br>来解决Redis在单线程下的性能问题。</p>
+<h3 id="多路复用"><a href="#多路复用" class="headerlink" title="多路复用"></a>多路复用</h3><p>//TODO</p>
+<h2 id="在Redis中使用Lua脚本"><a href="#在Redis中使用Lua脚本" class="headerlink" title="在Redis中使用Lua脚本"></a>在Redis中使用Lua脚本</h2><p>在客户端使用Redis会面临很多问题，例如：原子性问题、性能问题等</p>
+<ul>
+<li>原子性问题：Redis作为数据服务器，多个客户端连接到Redis上，这个时候多个客户端发送的命令可能会因为网络或者其他元素导致Redis服务器收到的命令顺序会被打乱，这样就造成了客户端发送的一批<br>命令没有顺序性的执行，导致数据错乱。</li>
+<li>性能问题：客户端执行一段逻辑可能需要多次访问Redis服务器，这期间的多次网络请求就会成为Redis性能的瓶颈。<br>为了解决以上问题，Redis内嵌了对Lua脚本的支持，客户端可以通过Lua脚本发送一批Redis命令到Redis服务器，这一操作，既解决了Redis的原子性问题又解决了性能问题。使用Lua脚本的好处：</li>
+</ul>
+<ol>
+<li>减少网络开销，可以吧多个Redis命令放到一个Lua脚本中执行</li>
+<li>原子操作：Redis会叫这个Lua脚本作为一个整体执行，中间不会接受客户端的其他请求。</li>
+<li>复用性：Redis可以把一个Lua脚本保存到服务器中，其他客户端都可以使用该脚本。</li>
+</ol>
+<h3 id="在Lua脚本中调用Redis命令"><a href="#在Lua脚本中调用Redis命令" class="headerlink" title="在Lua脚本中调用Redis命令"></a>在Lua脚本中调用Redis命令</h3><pre><code>redis.call(&quot;set&quot;,&quot;key&quot;,&quot;value&quot;)
+local val = redis.call(&quot;get&quot;,&quot;key&quot;)</code></pre><p>以上脚本是在Lua脚本中调用Redis命令，并且返回结果到Lua脚本中，那么在开发场景中，Lua脚本其实也可以看成是我们封装的一个带有逻辑性的Redis命令，那么是Redis命令就一定会有返回值，应该任何<br>从Lua脚本中获取返回值呢，也就是执行完Lua脚本过后，得到执行结果，其实可以通过在Lua脚本中通过<code>return</code>关键字将结果返回，如果没有<code>return</code>，则默认返回nil。<br>PS:定义一个lua脚本用于设置一个字符串类型的key</p>
+<pre><code># demo.lua
+return redis.call(&quot;set&quot;,KEYS[1],ARGS[1])</code></pre><p>执行lua脚本，使用<code>EVAL demo.lua 1 key value</code>，其中1表示一个key，也就是1后面的多少个参数作为key会被放到KEYS变量中，其余的参数都会放到ARGS中。<br>使用Lua脚本可以将一系列的Redis命令封装在脚本中，减少了多次请求网络的开销和原子性问题，但其实当客户端发送一次Lua脚本的时候，Lua脚本本身比较大，对网络开销也很大，所以我们可以将<br>Lua脚本缓存到Redis中并生成SHA1摘要，客户端只需要发送摘要就可以代替对应的Lua脚本。操作命令如下：</p>
+<pre><code>script load demo.lua
+eavlsha sha摘要 0</code></pre><h2 id="Redis集群"><a href="#Redis集群" class="headerlink" title="Redis集群"></a>Redis集群</h2><p>在日常开发过程中，我们使用任何中间件都一定会考虑其单点问题，都会使用集群的方式来达到中间件本身的高可用。</p>
+<h3 id="主从复制"><a href="#主从复制" class="headerlink" title="主从复制"></a>主从复制</h3><p>Redis支持一主多从的高可用方案，就是一个主节点对应多个从节点，主节点能处理客户端的读写操作，而从节点则只能接受读操作，当主节点出现宕机不可用等情况时，从节点可以升级成为主节点持续<br>对外提供服务。那么主节点和从节点就一定会有数据同步的过程，这个过程是在当主节点中数据发生变更时会触发，该操作是异步的，即数据同步过程中不会影响主节点对外提供服务。<br>实现Redis主从复制也是很简单的，只需要在从节点的redis.conf配置文件中增加配置<code>slaveof masterIp masterPort</code>并且允许所有IP访问（注释掉bindip）即可，主节点不需要修改任何配置。<br>启动主从节点过后，可以通过<code>info replication</code>查看集群状态。</p>
+<h4 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h4><ul>
+<li><p>全量复制：全量复制一般发生在初始化过程中，步骤如下：</p>
+<ol>
+<li>从节点启动连接到主节点过后，向主节点发送SYNC命令</li>
+<li>主节点收到SYNC命令过后，执行BGSAVE命令进行RDB快照，并且将从现在开始收到的客户端的增删改操作命令保存到缓冲区中</li>
+<li>主节点执行完BGSAVE命令过后将生成的RDB发送给从节点，发送期间继续保存主节点执行的命令</li>
+<li>从节点收到RDB文件过后，丢弃旧的数据，从RDB文件中恢复数据</li>
+<li>主节点在发送完快照文件过后向从节点发送缓冲区的操作命令</li>
+<li>从节点收到主节点的操作命令过后执行<br>当完成以上操作过后Redis主从的初始化就完成了，从节点这个时候就可以接受客户端发送的读请求了。<br>Redis中主从复制其实是利用RDB快照的方式，然而使用该方式会存在一些问题，例如：<ol>
+<li>当Master为开启RDB快照时，主从复制的初始化任然会执行RDB快照，生成一个文件到响应目录中，当Master下次启动时，会根据这个RDB文件进行数据恢复，由于快照生成的时间可以是任何时间点的<br>所有就会造成数据问题。</li>
+<li>当硬盘性能本身很低时，可能会造成主节点的性能瓶颈<br>为了解决以上问题，Redis2.8.18版本以后，提供了无硬盘复制，也就是说不会生成RDB文件，直接发送数据。我们可以通过<code>repl-diskless-sync yes</code>配置来开启该功能。</li>
+</ol>
+</li>
+</ol>
+</li>
+<li><p>增量复制：增量复制是指当主节点数据发生变更时，主节点将接收到的客户端发送的命令原封不动的发送给从节点，从节点收到主节点发送的命令过后执行来达到数据的同步。</p>
+</li>
+</ul>
+<h4 id="哨兵机制"><a href="#哨兵机制" class="headerlink" title="哨兵机制"></a>哨兵机制</h4><p>前面说到了当Redis集群中的主节点宕机或者不可用时，需要从其他从节点中选举一个作为主节点继续对外提供服务，那么谁去选举Master呢，在Redis中提供了一个角色来专门做Master故障切换和选举。<br>这就是哨兵。在Redis中，哨兵主要干两件事情，一是监控Master和Slave节点是否正常运行，二是当Master出现宕机不可用时，从从节点中选举一个节点作为Master节点。哨兵是一个独立的进程，监控着<br>集群中的Master节点，通过Master节点，哨兵可以找到该集群中的其他从节点，进而监控着整个集群中的所有主从节点。</p>
+<p>虽然这一架构解决了Redis集群中故障切换的问题，但是有引发了另外一个问题，就是哨兵作为集群中故障切换的关键角色，哨兵的单点问题也需要解决。所以，这个时候的架构应该改进为，主从集群和哨兵集群，<br>来达到整个Redis服务集群的高可用。哨兵集群中的所有哨兵节点是相互感知的，原理大概是：所有哨兵节点都监控同一个Master节点，并且订阅同一个channel（名为 channel:sentinel:hello），<br>新加入的哨兵节点会向该channel中发送一条消息（包含自身信息），新加入的哨兵节点和其他哨兵节点建立一个长连接。</p>
+<p>哨兵节点会定期向Master发送心跳包来判断Master节点是否存货，一旦发现Master没有正确相应，哨兵会将该Master节点状态设置为“主观不可用”，然后把这个状态发送给其他哨兵节点进行确认，<br>如果确认的节点超过配置的“quorum”值时，则会认为Master是客观不可用。接着就会进入Master选举流程。这个时候又会出现一个问题，哨兵是一个集群，具体的由哪一个哨兵来执行该操作呢，<br>这里就涉及到了领头哨兵的选举，这里其实使用是Raft算法，具体流程如下：</p>
+<ol>
+<li>发现主库客观下线的哨兵节点（这里称为A）向每个哨兵节点发送命令要求对方选举自己为领头哨兵（leader）</li>
+<li>如果目标哨兵没有选举过其他人，则同意将A选举为领头哨兵</li>
+<li>如果A发现有超过半数且超过quorum参数值的哨兵节点同意选自己成为领头哨兵，则A哨兵成功选举为领头哨兵</li>
+<li>当有多个哨兵节点同时参与领头哨兵选举时，出现没有任何节点当选可能，此时每个参选节点等待一个随机时间进行下一轮选举，直到选出领头哨兵</li>
+</ol>
+<h4 id="哨兵的配置实现"><a href="#哨兵的配置实现" class="headerlink" title="哨兵的配置实现"></a>哨兵的配置实现</h4><p>在运行哨兵节点的服务器上新建一个sentinel.conf文件，添加以下属性：</p>
+<pre><code>port 6040
+sentinel monitor mymaster 192.168.1.1 6379 1            # name为自定义master名称，1表示最少多少个哨兵节点同意才能执行后面的操作
+sentinel down-after-milliseconds mymaster 5000          # 表示如果5s内mymaster没响应，就认为SDOWN
+sentinel failover-timeout mymaster 15000                # 表示如果15秒后,mysater仍没活过来，则启动failover，从剩下的slave中选一个升级为master</code></pre><p>启动哨兵的两种方式<code>./redis-server.sh /path/sentinel.conf --sentinel</code>/<code>./redis-sentinel /path/sentinel.conf</code></p>
+<h3 id="Redis-Cluster"><a href="#Redis-Cluster" class="headerlink" title="Redis-Cluster"></a>Redis-Cluster</h3><p>//TODO</p>
+<h2 id="Redis缓存及数据一致性的问题"><a href="#Redis缓存及数据一致性的问题" class="headerlink" title="Redis缓存及数据一致性的问题"></a>Redis缓存及数据一致性的问题</h2><p>Redis缓存和数据库在事务上是不能达到统一的，那么我们如何保证最终一致性。</p>
+<ul>
+<li>先操作缓存还是先操作数据库？<br>答：如果我们使用缓存失效这种方式来代替缓存数据的更新，那么应该先更新数据库再失效缓存。如果使用更新缓存的方式，我们需要根据业务场景来权衡。</li>
+<li>更新缓存还是让缓存失效？<br>答：如果更新缓存的代价较小，可以更新缓存，如果更新缓存的代价较大，我们可以直接将缓存失效，下一次访问时缓存未命中，则会自动从数据库中获取数据并且将其缓存</li>
+</ul>
+<h2 id="缓存雪崩"><a href="#缓存雪崩" class="headerlink" title="缓存雪崩"></a>缓存雪崩</h2><p>当大规模的缓存数据同时失效或者说缓存集群不可用时，大量的客户端请求直接性的对DB层造成了重大的冲击，最终导致整个系统瘫痪，这种现象称之为缓存雪崩。那么面对这一现象应该考虑的解决方式如下：</p>
+<ol>
+<li>当缓存中未命中客户端想要的数据，则通过加锁形成排队的方式访问数据库，避免同时并发的访问底层存储系统带来的重大冲击。</li>
+<li>避免大批量缓存数据同时失效，将缓存过期时间点分散。</li>
+<li>保证缓存服务的高可用。</li>
+</ol>
+<h2 id="缓存穿透"><a href="#缓存穿透" class="headerlink" title="缓存穿透"></a>缓存穿透</h2><p>当客户端查询一个不存在的数据，缓存和数据库都不会命中，又由于数据库中没有数据，所以不会被缓存。由于底层存储系统往往不具备高并发性，频繁并发的穿透可能会导致存储系统宕机。对于这一现象<br>的解决思路如下：</p>
+<ol>
+<li>将不存在的key也缓存到缓存中</li>
+<li>将key按照规则命名，将不符合规则的key过滤掉</li>
+<li>采用布隆过滤器的方式来判断当前查询的key是否存在于缓存当中，如果不存在，则过滤掉。</li>
+</ol>
+<h3 id="布隆过滤器"><a href="#布隆过滤器" class="headerlink" title="布隆过滤器"></a>布隆过滤器</h3><p>主要作用是判断一个元素是否存在于集合中，因为它是一个概率算法，所以会存在误差。它的优点在于空间效率和查询时间都比其他算法快。<br>例如：当传入一个元素，结果表示其存在但有可能不存在，但是绝对不会出现结果表示不存在的但实际存在。也就是说，布隆过滤器判断一个元素不存在则绝对不存在，判断一个元素存在则会出现误差。</p>
+
+            </div>
+            <hr/>
+
+            
+
+            <link rel="stylesheet" type="text/css" href="/libs/share/css/share.min.css">
+
+<div id="article-share">
+    
+    <div class="social-share" data-disabled="qzone" data-wechat-qrcode-helper="<p>微信里点“发现”->“扫一扫”二维码便可查看分享。</p>"></div>
+    
+</div>
+
+<script src="/libs/share/js/social-share.min.js"></script>
+
+            <div class="reprint">
+                <p>
+                    <span class="reprint-tip">
+                        <i class="fa fa-exclamation-circle"></i>&nbsp;&nbsp;转载请注明:
+                    </span>
+                    <a href="http://blog.easyjava.xyz" class="b-link-green">James</a>
+                    <i class="fa fa-angle-right fa-lg fa-fw text-color"></i>
+                    <a href="/2019/12/23/Redis原理及实战/" class="b-link-green">Redis原理及实战</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    
+        <link rel="stylesheet" href="/libs/gitalk/gitalk.css">
+<link rel="stylesheet" href="/css/my-gitalk.css">
+
+<div class="card gitalk-card" data-aos="fade-up">
+    <div id="gitalk-container" class="card-content"></div>
+</div>
+
+<script src="/libs/gitalk/gitalk.min.js"></script>
+<script>
+    let gitalk = new Gitalk({
+        clientID: 'a9858e7f3645ea83f878',
+        clientSecret: '71d9c3a127b0215d02928dd47776ba2c72aad2cf',
+        repo: 'james-ok.github.io',
+        owner: 'james-ok',
+        admin: "james-ok",
+        id: '2019-12-23T19-14-14',
+        distractionFreeMode: false  // Facebook-like distraction free mode
+    });
+
+    gitalk.render('gitalk-container');
+</script>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+<article id="prenext-posts" class="prev-next articles">
+    <div class="row article-row">
+        
+        <div class="article col s12 m6" data-aos="fade-up">
+            <div class="article-badge left-badge text-color">
+                <i class="fa fa-chevron-left"></i>&nbsp;上一篇</div>
+            <div class="card">
+                <a href="/2019/12/27/Nginx入门及实战/">
+                    <div class="card-image">
+                        
+                        
+                        <img src="/medias/featureimages/9.jpg" class="responsive-img" alt="Nginx入门及实战">
+                        
+                        <span class="card-title">Nginx入门及实战</span>
+                    </div>
+                </a>
+                <div class="card-content article-content">
+                    <div class="summary">一说到Nginx，想到的就是反向代理，负载均衡，动静分离，这些都只是Nginx的一些模块，也是我们经常在生产环境中使用到的主要模块，其实Nginx远远不止这些模块，他还可以做RTMP推拉流服务器，可以做直播服务器等等，还可以自定义扩展。
+N</div>
+                    <div class="publish-info">
+                        <span class="publish-date">
+                            <i class="fa fa-clock-o fa-fw icon-date"></i>2019-12-27
+                        </span>
+                        <span class="publish-author">
+                            
+                            <i class="fa fa-bookmark fa-fw icon-category"></i>
+                            
+                            <a href="/categories/Nginx/" class="post-category" target="_blank">
+                                    Nginx
+                                </a>
+                            
+                            
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="card-action article-tags">
+                    
+                    <a href="/tags/Nginx/" target="_blank">
+                        <span class="chip bg-color">Nginx</span>
+                    </a>
+                    
+                    <a href="/tags/服务器/" target="_blank">
+                        <span class="chip bg-color">服务器</span>
+                    </a>
+                    
+                    <a href="/tags/负载均衡/" target="_blank">
+                        <span class="chip bg-color">负载均衡</span>
+                    </a>
+                    
+                    <a href="/tags/反向代理/" target="_blank">
+                        <span class="chip bg-color">反向代理</span>
+                    </a>
+                    
+                    <a href="/tags/Openresty/" target="_blank">
+                        <span class="chip bg-color">Openresty</span>
+                    </a>
+                    
+                </div>
+                
+            </div>
+        </div>
+        
+        
+        <div class="article col s12 m6" data-aos="fade-up">
+            <div class="article-badge right-badge text-color">
+                下一篇&nbsp;<i class="fa fa-chevron-right"></i>
+            </div>
+            <div class="card">
+                <a href="/2019/12/12/Kafka原理分析/">
+                    <div class="card-image">
+                        
+                        
+                        <img src="/medias/featureimages/17.jpg" class="responsive-img" alt="Kafka原理分析">
+                        
+                        <span class="card-title">Kafka原理分析</span>
+                    </div>
+                </a>
+                <div class="card-content article-content">
+                    <div class="summary">我们都知道Kafka具有很高的吞吐量、数据分片、冗余和容错等优点，一般用于用户行为追踪以及分布式系统日志收集等场景，那么Kafka是如何做到这些优点的呢，今天就让我们来一一分析。
+Kafka入门安装
+点击下载
+解压:tar -zxvf ka</div>
+                    <div class="publish-info">
+                            <span class="publish-date">
+                                <i class="fa fa-clock-o fa-fw icon-date"></i>2019-12-12
+                            </span>
+                        <span class="publish-author">
+                            
+                            <i class="fa fa-bookmark fa-fw icon-category"></i>
+                            
+                            <a href="/categories/Kafka/" class="post-category" target="_blank">
+                                    Kafka
+                                </a>
+                            
+                            
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="card-action article-tags">
+                    
+                    <a href="/tags/消息中间件/" target="_blank">
+                        <span class="chip bg-color">消息中间件</span>
+                    </a>
+                    
+                    <a href="/tags/Kafka/" target="_blank">
+                        <span class="chip bg-color">Kafka</span>
+                    </a>
+                    
+                </div>
+                
+            </div>
+        </div>
+        
+    </div>
+</article>
+</div>
+
+
+<script>
+    $('#articleContent').on('copy', function (e) {
+        // IE8 or earlier browser is 'undefined'
+        if (typeof window.getSelection === 'undefined') return;
+
+        var selection = window.getSelection();
+        // if the selection is short let's not annoy our users.
+        if (('' + selection).length < Number.parseInt('120')) {
+            return;
+        }
+
+        // create a div outside of the visible area and fill it with the selected text.
+        var bodyElement = document.getElementsByTagName('body')[0];
+        var newdiv = document.createElement('div');
+        newdiv.style.position = 'absolute';
+        newdiv.style.left = '-99999px';
+        bodyElement.appendChild(newdiv);
+        newdiv.appendChild(selection.getRangeAt(0).cloneContents());
+
+        // we need a <pre> tag workaround.
+        // otherwise the text inside "pre" loses all the line breaks!
+        if (selection.getRangeAt(0).commonAncestorContainer.nodeName === 'PRE') {
+            newdiv.innerHTML = "<pre>" + newdiv.innerHTML + "</pre>";
+        }
+
+        var url = document.location.href;
+        newdiv.innerHTML += '<br />'
+            + '来源: James<br />'
+            + '作者: James<br />'
+            + '链接: <a href="' + url + '">' + url + '</a><br />'
+            + '本文章著作权归作者所有，任何形式的转载都请注明出处。';
+
+        selection.selectAllChildren(newdiv);
+        window.setTimeout(function () {bodyElement.removeChild(newdiv);}, 200);
+    });
+</script>
+
+    </div>
+    <div class="col l3 hide-on-med-and-down">
+        <div class="toc-widget">
+            <div class="toc-title"><i class="fa fa-list-alt"></i>&nbsp;&nbsp;目录</div>
+            <div id="toc-content"></div>
+        </div>
+    </div>
+</div>
+
+<script src="/libs/tocbot/tocbot.min.js"></script>
+<script>
+    $(function () {
+        tocbot.init({
+            tocSelector: '#toc-content',
+            contentSelector: '#articleContent',
+            headingsOffset: -($(window).height() * 0.4 - 45),
+            // headingsOffset: -205,
+            headingSelector: 'h2, h3, h4'
+        });
+
+        // modify the toc link href to support Chinese.
+        let i = 0;
+        let tocHeading = 'toc-heading-';
+        $('#toc-content a').each(function () {
+            $(this).attr('href', '#' + tocHeading + (++i));
+        });
+
+        // modify the heading title id to support Chinese.
+        i = 0;
+        $('#articleContent').children('h2, h3, h4').each(function () {
+            $(this).attr('id', tocHeading + (++i));
+        });
+
+        // Set scroll toc fixed.
+        let tocHeight = parseInt($(window).height() * 0.4 - 64);
+        let $tocWidget = $('.toc-widget');
+        $(window).scroll(function () {
+            let scroll = $(window).scrollTop();
+            /* add post toc fixed. */
+            if (scroll > tocHeight) {
+                $tocWidget.addClass('toc-fixed');
+            } else {
+                $tocWidget.removeClass('toc-fixed');
+            }
+        });
+    });
+</script>
+    
+
+</main>
+
+
+<footer class="page-footer bg-color">
+    <div class="container row center-align">
+        <div class="col s12 m8 l8 copy-right">
+            本站由&copy;<a href="blog.easyjava.xyz" target="_blank">James</a>基于
+            <a href="https://hexo.io/" target="_blank">Hexo</a> 的
+            <a href="https://github.com/blinkfox/hexo-theme-matery" target="_blank">hexo-theme-matery</a>主题搭建.
+
+            
+                &nbsp;<i class="fa fa-area-chart"></i>&nbsp;站点总字数:&nbsp;
+                <span class="white-color">50k</span>
+            
+
+            
+			
+                <br>
+                
+                <span id="busuanzi_container_site_pv">
+                    <i class="fa fa-heart-o"></i>
+                    本站总访问量 <span id="busuanzi_value_site_pv" class="white-color"></span>
+                </span>
+                
+                
+                <span id="busuanzi_container_site_uv">
+                    <i class="fa fa-users"></i>
+                    次,&nbsp;访客数 <span id="busuanzi_value_site_uv" class="white-color"></span> 人.
+                </span>
+                
+            
+        </div>
+        <div class="col s12 m4 l4 social-link social-statis">
+    <a href="https://github.com/james-ok" class="tooltipped" target="_blank" data-tooltip="访问我的GitHub" data-position="top" data-delay="50">
+        <i class="fa fa-github"></i>
+    </a>
+
+
+
+    <a href="mailto:vip.dujuncheng@foxmail.com" class="tooltipped" target="_blank" data-tooltip="邮件联系我" data-position="top" data-delay="50">
+        <i class="fa fa-envelope-open"></i>
+    </a>
+
+
+
+    <a href="tencent://AddContact/?fromId=50&fromSubId=1&subcmd=all&uin=1261100508" class="tooltipped" data-tooltip="QQ联系我: 1261100508" data-position="top" data-delay="50">
+        <i class="fa fa-qq"></i>
+    </a>
+
+
+</div>
+    </div>
+</footer>
+
+<div class="progress-bar"></div>
+
+
+<!-- 搜索遮罩框 -->
+<div id="searchModal" class="modal">
+    <div class="modal-content">
+        <div class="search-header">
+            <span class="title"><i class="fa fa-search"></i>&nbsp;&nbsp;搜索</span>
+            <input type="search" id="searchInput" name="s" placeholder="请输入搜索的关键字"
+                   class="search-input" autofocus="">
+        </div>
+        <div id="searchResult"></div>
+    </div>
+</div>
+
+<script src="/js/search.js"></script>
+<script type="text/javascript">
+    searchFunc("/" + "search.xml", 'searchInput', 'searchResult');
+</script>
+<!-- 回到顶部按钮 -->
+<div id="backTop" class="top-scroll">
+    <a class="btn-floating btn-large waves-effect waves-light" href="#!">
+        <i class="fa fa-angle-up"></i>
+    </a>
+</div>
+
+
+<script src="/libs/materialize/js/materialize.min.js"></script>
+<script src="/libs/masonry/masonry.pkgd.min.js"></script>
+<script src="/libs/aos/aos.js"></script>
+<script src="/libs/scrollprogress/scrollProgress.min.js"></script>
+<script src="/libs/lightGallery/js/lightgallery-all.min.js"></script>
+<script src="/js/matery.js"></script>
+
+<!-- Global site tag (gtag.js) - Google Analytics -->
+
+
+
+    <script src="/libs/others/clicklove.js"></script>
+
+
+    <script async src="/libs/others/busuanzi.pure.mini.js"></script>
+
+
+</body>
+</html>
