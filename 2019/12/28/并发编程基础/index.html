@@ -425,14 +425,14 @@
                     
                     <div class="info-break-policy">
                         <i class="fa fa-file-word-o fa-fw"></i>文章字数:&nbsp;&nbsp;
-                        6.2k
+                        13.4k
                     </div>
                     
 
                     
                     <div class="info-break-policy">
                         <i class="fa fa-clock-o fa-fw"></i>阅读时长:&nbsp;&nbsp;
-                        22 分
+                        48 分
                     </div>
                     
                 
@@ -671,13 +671,331 @@ ObjectMonitor() {
 <li>轻量级锁：如果偏向锁失败，即获得锁的线程和本次竞争锁的线程不是同一个，偏向锁失败以为着不能避免同步操作，这个时候JVM会将偏向锁升级成为轻量级锁。它的本意是没有多线程竞争的情况下。</li>
 <li>重量级锁：Synchronized是通过Monitor来实现的，而Monitor又是依赖底层操作系统的Mutex Lock来实现的，这个时候操作系统会线程的阻塞和唤醒需要从用户态转换为内核态，这个操作非常耗时，这就是为什么Synchronized<br>耗时的原因，这种依赖操作系统Mutex Lock来实现的锁也称之为重量级锁。</li>
 </ul>
-<h2 id="J-U-C-java-util-concurrent"><a href="#J-U-C-java-util-concurrent" class="headerlink" title="J.U.C(java.util.concurrent)"></a>J.U.C(java.util.concurrent)</h2><h3 id="Java并发的分类"><a href="#Java并发的分类" class="headerlink" title="Java并发的分类"></a>Java并发的分类</h3><p>并发由一下三个方面组成</p>
+<h2 id="并发编程"><a href="#并发编程" class="headerlink" title="并发编程"></a>并发编程</h2><h3 id="Java并发的分类"><a href="#Java并发的分类" class="headerlink" title="Java并发的分类"></a>Java并发的分类</h3><p>并发由以下三个方面组成</p>
 <ul>
 <li>并发安全：并发安全也可以分为三个部分，互斥同步，非互斥同步，无同步方案</li>
 <li>并发性能：线程池</li>
 <li>线程协作：并发工具</li>
 </ul>
-<h3 id="CAS-Compare-And-Swap"><a href="#CAS-Compare-And-Swap" class="headerlink" title="CAS(Compare And Swap)"></a>CAS(Compare And Swap)</h3><h3 id="AQS-AbstractQueuedSynchronizer"><a href="#AQS-AbstractQueuedSynchronizer" class="headerlink" title="AQS(AbstractQueuedSynchronizer)"></a>AQS(AbstractQueuedSynchronizer)</h3><h2 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h2><blockquote>
+<h3 id="线程池"><a href="#线程池" class="headerlink" title="线程池"></a>线程池</h3><p><code>java.util.concurrent.ThreadPoolExecutor</code>类是线程池中最核心的一个类，该类继承链:<code>ThreadPoolExecutor -&gt; AbstractExecutorService -&gt; ExecutorService -&gt; Executor</code>.<br>创建线程池的核心参数有：</p>
+<ul>
+<li>corePoolSize:核心线程数</li>
+<li>maximumPoolSize:最大线程数</li>
+<li>keepAliveTime:除核心线程外的其他线程的存活时间，当线程多久时间没有执行任务时会被回收</li>
+<li>unit:参数keepAliveTime的时间单位</li>
+<li>workQueue:工作队列，当任务量超过了核心线程数过后的任务将堆积到该队列中。通常情况下，用三种常用的队列，分别是：SynchronousQueue(直接交换队列，相当于队列不存在，直接将任务分派给线程)、<br>LinkedBlockingQueue(无界队列，队列长度不限，但当任务量过大时，会导致OOM异常)、ArrayBlockingQueue(有界队列，该队列在创建时必须指定长度)</li>
+<li>threadFactory:线程创建工厂</li>
+<li>handler:当工作队列被填满并且线程数达到最大线程数时如果还有新的任务添加进来的拒绝策略。<br>  拒绝时机会发生在两种情况：<br>  1.当前线程次调用了shutdown方法过后，但还没有执行完队列中的任务时。<br>  2.工作队列已满，池中线程已达到最大线程数时。<br>  该策略有四种，分别是：<br>  1.ThreadPoolExecutor.AbortPolicy(丢弃任务直接抛出异常)<br>  2.ThreadPoolExecutor.DiscardPolicy(拒绝接受新的任务，不抛出异常)<br>  3.ThreadPoolExecutor.DiscardOldestPolicy(丢弃老的任务，使新的任务得到执行，不抛出异常)<br>  4.ThreadPoolExecutor.CallerRunsPolicy(让调用者执行该任务)</li>
+</ul>
+<p>线程池的执行原理：<br>线程池初始化完成过后默认不创建任何线程（我们可以通过调用方法来使其初始化完成就创建线程），当有新的任务进来，线程池才会创建新的线程，直到创建的线程等于核心线程数（corePoolSize）过后，之后的<br>任务都会堆积到工作队列（workQueue）中，当工作队列堆积的任务量达到队列的容量过后，线程池就会新增线程，直到线程池中的线程数量达到最大线程数（maximumPoolSize），达到最大线程数之后的所有任务<br>请求都会被拒绝。</p>
+<h4 id="线程池的创建于销毁"><a href="#线程池的创建于销毁" class="headerlink" title="线程池的创建于销毁"></a>线程池的创建于销毁</h4><p>线程池的创建可以分为手动创建和自动创建</p>
+<ul>
+<li>手动创建：通过new一个ThreadPoolExecutor对象创建一个线程池对象，注意参数。</li>
+<li>自动创建：JDK为我们提供了几个默认的线程池，通过工具类<code>Executors</code>的静态方法创建。分别是：<ol>
+<li>FixedThreadPool：创建固定线程数的线程池，该类线程池的<code>corePoolSize</code>和<code>maximumPoolSize</code>相同且都是用户自定义的，<code>workQueue</code>是无界队列<code>LinkedBlockingQueue</code>。</li>
+<li>SingleThreadExecutor：创建只有一个线程的线程池，该类线程池和<code>FixedThreadPool</code>一样，唯一的区别在于<code>corePoolSize</code>和<code>maximumPoolSize</code>的值都是1。</li>
+<li>CachedThreadPool：创建一个核心线程数为0，最大线程数无限大并且<code>workQueue</code>是<code>SynchronousQueue</code>的线程池</li>
+<li>ScheduledThreadPool：创建一个定时、周期性执行的线程池，有点类似定时任务。该类线程池的核心线程数是用户自定义的，最大线程数可以无限大，<code>workQueue</code>是延时队列<code>DelayedWorkQueue</code>。</li>
+</ol>
+</li>
+</ul>
+<p>线程池的关闭有两种方式，分别是<code>shutdown</code>/<code>shutdownNow</code></p>
+<ul>
+<li>shutdown：该方法并不会立即终止线程池，而是告诉线程池我需要关闭，当线程池执行完工作队列中的任务过后优雅停止，值得注意的是，当执行了shutdown方法过后，线程池的状态变更为<code>SHUTDOWN</code>，该状态<br>的线程池不接受新的任务，但会执行工作队列中已经存在的任务。</li>
+<li>shutdownNow：该方法会立即终止线程池，并且正在执行的线程会立刻返回。线程池的状态变更为<code>STOP</code></li>
+</ul>
+<h4 id="线程池的状态"><a href="#线程池的状态" class="headerlink" title="线程池的状态"></a>线程池的状态</h4><p>线程池有五种状态，分别是：</p>
+<ul>
+<li>RUNNING:该状态下的线程池接受并处理任务</li>
+<li>SHUTDOWN:该状态下的线程池不接受新的任务，但会执行已存在于工作队列中的任务</li>
+<li>STOP:该状态下的线程池不接受新的任务，也不执行工作队列中的任务，并且中断正在执行的任务</li>
+<li>TIDYING:当池中线程执行完并且工作队列中的任务都被执行完成，并且调用钩子方法<code>terminate()</code></li>
+<li>TERMINATED:钩子方法<code>terminate()</code>执行完成</li>
+</ul>
+<h3 id="Future和Callable"><a href="#Future和Callable" class="headerlink" title="Future和Callable"></a>Future和Callable</h3><p>Runnable和Callable的区别在于Runnable没有返回值且不能跑出检查的异常，而Callable可以<br>Future的五个重要方法：</p>
+<ul>
+<li>boolean cancel(boolean):该方法用于尝试取消任务的执行，如果该任务已结束或者已取消时返回false。参数接收一个boolean变量，当传入true时，表示强制停止的意思，传入false时，只有当任务还未开始时可以被中断。</li>
+<li>boolean isCancelled():判断当前任务是否被取消</li>
+<li>boolean isDone():当前任务是否已完成，正常完成，取消执行，异常都会返回true</li>
+<li>V get() throws InterruptedException, ExecutionException:返回任务的执行结果，如果当前任务还么有执行完毕，该方法将阻塞</li>
+<li>V get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException:指定阻塞的时长，在这段时间内如果返回则继续执行，如果超时，则抛出TimeoutException异常。</li>
+</ul>
+<h3 id="ThreadLocal"><a href="#ThreadLocal" class="headerlink" title="ThreadLocal"></a>ThreadLocal</h3><p>ThreadLocal使用场景</p>
+<ul>
+<li>每个线程独享一个对象，例如每个线程中创建一个<code>SimpleDataFormat</code>对象，该方式需要重写<code>initialValue</code>方法来创建对象，因为<code>SimpleDataFormat</code>对象不受其他因素影响，PS：<pre class="line-numbers language-java"><code class="language-java"><span class="token keyword">public</span> <span class="token keyword">static</span> ThreadLocal<span class="token operator">&lt;</span>SimpleDateFormat<span class="token operator">></span> formatLocal <span class="token operator">=</span> ThreadLocal<span class="token punctuation">.</span><span class="token function">initialValue</span><span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-</span><span class="token operator">></span> <span class="token keyword">new</span> <span class="token class-name">SimpleDateFormat</span><span class="token punctuation">(</span><span class="token string">"yyyy-MM-dd"</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+</li>
+<li>每个线程中保存一个全局变量，例如用户信息，每个线程的用户信息不一样，该方式使用set和get方法来存取对象，因为一开始我们并不知道当前用户是哪个。例如：线程A设置了一个值到ThreadLocal中，线程A<br>在任何时候都可以通过get方法获取到这个值，然而在其他线程中是无法获取的。</li>
+</ul>
+<h4 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h4><p>一个Thread对应一个ThreadLocalMap，而一个ThreadLocalMap中包含多个ThreadLocal，也就是说一个线程可以包含多个ThreadLocal对象，ThreadLocal中的对象其实都是保存在线程对象中的threadLocals变量中的，<br>在ThreadLocal中有三个比较重要的方法，分别是：</p>
+<ul>
+<li>setInitialValue():该方法首先会获取到当前线程，并且获取当前线程的threadLocals属性，判断该属性是否为null，如果为null则创建，不为null则调用initialValue方法，获取到对象，然后将其设置到当前<br>线程的threadLocals属性的map中。</li>
+<li>set():该方法和setInitialValue方法一样，首先会判断threadLocals属性是否为null，若为null，则创建，若不为null，则将value设置到threadLocals属性map中。</li>
+<li>get():该方法从当前线程的threadLocals属性中获取值，如果threadLocals属性为null，则调用setInitialValue方法，若不为null，则直接获取值且返回。</li>
+</ul>
+<h4 id="注意事项"><a href="#注意事项" class="headerlink" title="注意事项"></a>注意事项</h4><ul>
+<li>不能再ThreadLocal中set一个共享变量（静态变量），如果set的是一个共享变量，那么ThreadLocal通过get方法得到的仍然是共享的，毫无意义</li>
+<li>避免ThreadLocal内存泄漏，什么是内存泄漏？内存泄漏是指，对象在程序中已经没有意义了，但是不能被GC回收，常驻内存，最终导致OOM异常的发生。在使用完ThreadLocal对象过后，应该手动调用remove()<br>方法释放掉ThreadLocal对象的强引用value</li>
+</ul>
+<h3 id="锁"><a href="#锁" class="headerlink" title="锁"></a>锁</h3><h4 id="Lock接口"><a href="#Lock接口" class="headerlink" title="Lock接口"></a>Lock接口</h4><p>该接口有六个方法</p>
+<pre class="line-numbers language-java"><code class="language-java"><span class="token keyword">class</span> <span class="token class-name">Lock</span> <span class="token punctuation">{</span>
+    <span class="token comment" spellcheck="true">// 获取锁  </span>
+    <span class="token keyword">void</span> <span class="token function">lock</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment" spellcheck="true">// 如果当前线程未被中断，则获取锁，可以响应中断  </span>
+    <span class="token keyword">void</span> <span class="token function">lockInterruptibly</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span> 
+
+    <span class="token comment" spellcheck="true">// 返回绑定到此 Lock 实例的新 Condition 实例  </span>
+    Condition <span class="token function">newCondition</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment" spellcheck="true">// 仅在调用时锁为空闲状态才获取该锁，可以响应中断  </span>
+    <span class="token keyword">boolean</span> <span class="token function">tryLock</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment" spellcheck="true">// 如果锁在给定的等待时间内空闲，并且当前线程未被中断，则获取锁  </span>
+    <span class="token keyword">boolean</span> <span class="token function">tryLock</span><span class="token punctuation">(</span><span class="token keyword">long</span> time<span class="token punctuation">,</span> TimeUnit unit<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+    <span class="token comment" spellcheck="true">// 释放锁  </span>
+    <span class="token keyword">void</span> <span class="token function">unlock</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>以上方法重点介绍<code>lockInterruptibly</code>方法，该方法可以响应中断，也就是说，如果多个线程同时获取同一把锁时，有且只有一个线程能成功获取到锁，然而其他线程就只能等待，这个时候，正在等待的线程<br>调用<code>interrupt</code>方法，就能够中断该线程的等待过程</p>
+<h4 id="锁的分类"><a href="#锁的分类" class="headerlink" title="锁的分类"></a>锁的分类</h4><ul>
+<li>根据线程是否需要锁住同步资源进行分类：悲观锁、乐观锁</li>
+<li>根据线程是否共享一把锁进行分类：共享锁、独占锁</li>
+<li>根据线程竞争时是否排队进行分类：公平锁、非公平锁</li>
+<li>根据同一个线程是否可以重复获取同一把锁进行分类：可重入锁、不可重入锁</li>
+<li>根据线程是否可中断进行分类：可中断锁、不可中断锁</li>
+<li>根据线程等锁的方式进行分类：自旋锁、非自旋锁</li>
+</ul>
+<h4 id="各种类型锁的解释"><a href="#各种类型锁的解释" class="headerlink" title="各种类型锁的解释"></a>各种类型锁的解释</h4><ul>
+<li>悲观锁：总是设想最坏的情况，认为每个线程都是去修改数据。共享资源只能让一个线程使用，其他线程只能等待当前线程处理完毕释放过后才能访问。例如：数据库行锁、表锁</li>
+<li>乐观锁：总是设想最好的情况，认为读多写少。多个线程读取同一个共享资源是不需要加锁的，但是在修改数据的时候通过上一次修改的版本来控制当前数据是最新的。</li>
+<li>共享锁：该锁可以同时被多个线程所持有，用于多个线程读取共享数据提高效率，例如<code>ReentrantReadWriteLock</code>的读锁</li>
+<li>独占锁：独占锁又称排它锁，该锁只能同时被一个线程所持有，例如<code>ReentrantReadWriteLock</code>的写锁。<code>ReentrantReadWriteLock</code>要么多个线程同时读，要么一个线程写</li>
+<li>公平锁：线程对于锁的争抢规则按照顺序获得。</li>
+<li>非公平锁：线程对于锁的争抢规则在满足一定条件时可插队，条件是：当前获得资源的线程执行完毕，在释放锁过后线程等待队列的第一个线程没有准备就绪，这个时候可以让已经准备就绪的线程先获得锁。</li>
+<li>可重入锁：当多个原子操作需要访问当同一临界资源时，并且这些原子操作有相互嵌套调用的情况，例如：方法A需要访问共享资源，并且方法A需要调用方法B，此时，我们通常会对方法A/B加锁，如果线程1<br>访问方法A获得了锁，在调用方法B的时候，有需要获得锁，这个时候还能能获得成功。也就是说，同一个线程能多次获得通一把锁。</li>
+<li>不可重入锁：同一个线程对通一把锁只能获得一次。此类锁如果遇到可重入锁的场景会出现死锁的问题。</li>
+<li>可中断锁：当线程想要获取的锁被其他线程占用时，如果想要等待中的线程中断去做其他事情，那么可以调用<code>interrupt</code>方法使其中断。</li>
+<li>不可中断锁：当线程想要获取一个被其他线程所占用的锁时，当前线程只能等该锁被释放，否则一直等待下去，不能被中断。</li>
+<li>自旋锁：当一个线程想要获取一个被占用的锁时，当前线程会一直循环等待下去，直到获得锁为止。该方式主要是为了节省线程被挂起切换所带来的CPU资源开销。</li>
+<li>非自旋锁：当锁被占用时，其他线程将被放入等待队列等待锁释放。</li>
+</ul>
+<h4 id="ReentrantReadWriteLock简介"><a href="#ReentrantReadWriteLock简介" class="headerlink" title="ReentrantReadWriteLock简介"></a><code>ReentrantReadWriteLock</code>简介</h4><p><code>ReentrantReadWriteLock</code>中有两把锁，一个是读锁、一个是写锁，读锁可以同时被多个线程持有，但是当读锁被占用时，其他线程不能获取写锁，当写锁被占用时，不能获取读锁，总之就是，要么多个线程<br>持有一把读锁，要么一个线程持有一把写锁。当ReentrantReadWriteLock是公平锁时，线程对ReentrantReadWriteLock的读写锁争抢规则为顺序，不允许插队；当ReentrantReadWriteLock是非公平锁时，<br>在满足条件的情况下允许插队，条件是：当前被占用的锁为读锁，并且等待队列的头节点也是读请求时允许插队。<br>锁降级：当一个操作既用到读锁也用到写锁时，我们希望该操作在一起完成，我们又不希望全局使用写锁（因为会浪费资源开销），我们可以将当前持有的锁进行降级，读锁不能升级成为写锁，但是写锁可以降级成为读锁。<br>也就是，在读锁里面不能获取写锁，但是在写锁里面可以获取读锁。</p>
+<h4 id="锁优化"><a href="#锁优化" class="headerlink" title="锁优化"></a>锁优化</h4><p>JVM为我们做了锁的优化，例如：</p>
+<ul>
+<li>自旋锁和自适应：自动适应当前线程获取锁的过程采用自选还是非自旋，自选时长等等。</li>
+<li>锁清除：频繁的对锁进行同步与释放，是会消耗一定的系统资源的，有时候我们写的代码逻辑其实是不需要进行加锁的，这个时候我们可以通过编译器进行优化</li>
+<li>锁粗化：将很多个小逻辑加锁放大到一个操作里面，对这个操作加锁。也就是将多把小锁合并成为一把大锁。</li>
+</ul>
+<h3 id="原子类"><a href="#原子类" class="headerlink" title="原子类"></a>原子类</h3><p>原子旨在一个操作被执行时不允许被打断，要么该操作被执行，要么该操作不被执行，不允许出现该操作被分成多个部分，分别执行。在JUC中提供了几个常用的原子操作类<code>AtomicInteger</code>/<code>AtomicLong</code>/<code>AtomicBoolean</code><br>还有将普通类型转换成为引用类型的原子操作类<code>AtomicReference</code>，原子数组类<code>AtomicIntegerArray</code>/<code>AtomicLongArray</code>/<code>AtomicReferenceArray</code>，普通类型转换原子类型的<br><code>AtomicIntegerFieldUpdater</code>/<code>AtomicLongUpdater</code>/<code>AtomicReferenceUpdater</code>，用于累加的<code>LongAdder</code>/<code>DoubleAdder</code>，用于累计特定公式的<code>LongAccumulater</code>/<code>DoubleAccumulater</code><br>下面来分别介绍这几种原子类：</p>
+<ul>
+<li>基本原子操作类：例如<code>AtomicInteger</code>/<code>AtomicLong</code>/<code>AtomicBoolean</code>，前面两种主要方法有递增，递减，按指定数值累加一节一些CAS方法，而<code>AtomicBoolean</code>没有递增递减方法。</li>
+<li>引用原子操作类：<code>AtomicReference</code>，该类提供一个原子读写的对象引用变量，使用方式如下：<pre class="line-numbers language-java"><code class="language-java"><span class="token keyword">class</span> <span class="token class-name">Test</span> <span class="token punctuation">{</span>
+  <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span>String<span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      AtomicReference<span class="token operator">&lt;</span>String<span class="token operator">></span> atomicReference <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">AtomicReference</span><span class="token operator">&lt;</span><span class="token operator">></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      atomicReference<span class="token punctuation">.</span><span class="token function">set</span><span class="token punctuation">(</span><span class="token string">"Hello"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token comment" spellcheck="true">//只有当atomicReference中的值等于Hello时，才允许修改</span>
+      <span class="token keyword">boolean</span> b <span class="token operator">=</span> atomicReference<span class="token punctuation">.</span><span class="token function">compareAndSet</span><span class="token punctuation">(</span><span class="token string">"Hello"</span><span class="token punctuation">,</span> <span class="token string">"World"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>b<span class="token punctuation">)</span><span class="token punctuation">;</span>
+      System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>atomicReference<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+</li>
+<li>数组原子操作类：例如<code>AtomicIntegerArray</code>/<code>AtomicLongArray</code>/<code>AtomicReferenceArray</code>，对原子数据的操作其实是对数组中的一个元素进行操作，操作室指定数组下标，方法和基本原子操作类相似。</li>
+<li>原子类转换器：例如<code>AtomicIntegerFieldUpdater</code>/<code>AtomicLongUpdater</code>/<code>AtomicReferenceUpdater</code>，该类将一个对象里面的基本数据类型字段转换升级成为原子类进行操作，最后将得到的结果<br>自动放入该对象的属性中去，注意该属性不能是静态变量。</li>
+<li>累加器：例如<code>LongAdder</code>/<code>DoubleAdder</code>，累加器专门用于数组的递增递减，和基本原子操作类中的递增和递减功能一样，但是性能上有很大的区别，累加器的性能要比基本原子操作类的性能高很多，原因<br>在于基本原子操作类在多线程情况下需要保证数据的可见性，也就是多个线程在各自的工作内存中进行递增操作，完成过后需要保证该数据对于其他线程是可见的，所以在线程退出时将数据刷新到主存中去，其他线程<br>在递增操作之前需要重新从主存中重新获取，这就导致了额外的内存开销；而累加器则不然，累加器中有两个重要的字段<code>base</code>/<code>cell</code>，在并发较少的情况下直接使用base变量进行累加，当并发较大时，这个<br>时候cell就起作用了，cell是一个数组，它为每一个线程开辟一个数组元素作为累加的结果存放区域，各自的线程只需要对自己相对应的元素进行累加就可以了，而最后在得到结果的时候讲base和cell中的各个<br>元素求和就得到了总的结果。所以，累加器是一种以空间换时间的做法。</li>
+<li>用于累计特定公式：例如<code>LongAccumulater</code>/<code>DoubleAccumulater</code>，该类原子类可以指定计算公式，相当于是将上一次的计算结果赋值给x，<code>accumulate</code>方法的值赋予y，进行计算。如下：<pre class="line-numbers language-java"><code class="language-java"><span class="token keyword">class</span> <span class="token class-name">Test</span> <span class="token punctuation">{</span>
+  <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span>String<span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      LongAccumulator accumulator <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">LongAccumulator</span><span class="token punctuation">(</span><span class="token punctuation">(</span>x<span class="token punctuation">,</span>y<span class="token punctuation">)</span> <span class="token operator">-</span><span class="token operator">></span> x <span class="token operator">+</span> y<span class="token punctuation">,</span><span class="token number">5</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      accumulator<span class="token punctuation">.</span><span class="token function">accumulate</span><span class="token punctuation">(</span><span class="token number">5</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>accumulator<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+</li>
+</ul>
+<h3 id="CAS-Compare-And-Swap"><a href="#CAS-Compare-And-Swap" class="headerlink" title="CAS(Compare And Swap)"></a>CAS(Compare And Swap)</h3><p>CAS即比较再交换，是一种无锁算法，其底层是调用<code>Unsafe</code>工具。其思想很简单，也就是当我们要修改某一个变量的值时，先判断该变量的值是否和我们预期的值匹配，如果匹配，这将该变量修改为我们将要修改的值，并且返回true，表示修改成功，<br>如果不匹配，则返回false，表示修改失败。利用CAS思想写一个等价代码：</p>
+<pre class="line-numbers language-java"><code class="language-java"><span class="token keyword">class</span> <span class="token class-name">Test</span> <span class="token punctuation">{</span>
+    <span class="token keyword">volatile</span> <span class="token keyword">int</span> value <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+
+    <span class="token comment" spellcheck="true">//CAS方法需要保证其原子性</span>
+    <span class="token keyword">public</span> <span class="token keyword">synchronized</span> <span class="token keyword">boolean</span> <span class="token function">compareAndSwap</span><span class="token punctuation">(</span><span class="token keyword">int</span> preValue<span class="token punctuation">,</span><span class="token keyword">int</span> newValue<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">if</span><span class="token punctuation">(</span>value<span class="token operator">==</span>preValue<span class="token punctuation">)</span><span class="token punctuation">{</span>
+            value <span class="token operator">=</span> newValue<span class="token punctuation">;</span>
+            <span class="token keyword">return</span> <span class="token boolean">true</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> <span class="token boolean">false</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>CAS的缺点：ABA问题，当线程A将value的值从5修改为7过后，线程B又将value的值从7修改为5，线程C这个时候判断value的值是否为5，如果是，则修改，否则则不修改。这个时候修改成功，因为线程C任务该<br>值没有被改变过，但其实value的值以经变了。</p>
+<h3 id="并发容器"><a href="#并发容器" class="headerlink" title="并发容器"></a>并发容器</h3><p>早期线程安全的容器，例如：Vector、Hashtable虽然都是线程安全的，但是他是使用synchronized修饰在各个方法上来实现的，性能非常低。<br>通过Collections.synchronizedList()工具的方法虽然可以将一个非线程安全的ArrayList或者HashMap转换成一个线程安全的容器，但其实现方式任然是使用synchronized关键字使用同步代码块的方式达到<br>线程安全的目的，虽然不是加在方法上，但其性能也是非常的低。<br>下面来一一介绍JUC为我们提供的并发容器类</p>
+<ul>
+<li>CurrentHashMap：线程安全的HashMap，HashMap在JDK1.7中的实现是通过数据加链表实现的，当有数据需要put时，首先根据key进行hash，得到当前数据的下标，然后通过下标拿到该数组的一个元素，也称<br>桶，这个桶就是链表，该种实现方式有一个缺点，当put的key出现hash冲突（多个key同时落到同一个桶上）时，该桶中的链表会越来越长，查询效率会很低。但是在JDK1.8中做了很大改动，当链表中节点数大于<br>设定的阈值（默认为8）时将链表转为红黑树。回到CurrentHashMap，CurrentHashMap在JDK1.7中采用分段锁的方式来实现线程安全，将CurrentHashMap中的数据分成多个段，然后给每一个段加锁，段与段之间<br>数据的操作互不干扰，所以不会出现线程安全问题，CurrentHashMap中定位一个元素需要两次hash操作，第一次得到segment，第二次定位到元素所在的链表。</li>
+<li>CopyOnWriteArrayList：线程安全的ArrayList，支持读读共享，读写共享，写写互斥，该List的实现方式在于，可以有多个线程同时读，当有线程相对该List进行写入操作时，将原有的数据复制一份，然后<br>让写入线程操作这份数据的副本，最后将该List的指针指向这个副本，从而达到读写互不干扰，此种方式有它的有点也有他的缺点，优点是，在读多写少的场景可以提高效率，在写的时候又能保证安全。缺点是，如果<br>写比较多时，复制数据会造成内存开销。</li>
+<li>BlockingQueue：阻塞队列，常用的阻塞队列有ArrayBlockingQueue、LinkedBlockingQueue。ArrayBlockingQueue是一个使用数据实现的有界队列，在初始化时需要制定队列长度，且生产者消费者<br>使用同一把锁，数据在插入时是直接插入；LinkedBlockingQueue是一个基于单向链表无界阻塞队列，初始化时不需要指定队列长度，默认是Integer.MAX_VALUE，且生产者消费者使用的分别是putLock和<br>takeLock，数据插入需要先包装成Node<e>。</e></li>
+<li>SynchronousQueue：一个不存储元素的阻塞队列，该队列将生产者消息和消费者直接交换，当消费者处理不过来生产者的消息时，生产者线程在往里面生产消息时会阻塞，同样的，当生产者没有生产消息时，<br>消费者消费消息也会被阻塞。</li>
+<li>DelayQueue：延时队列，该队列可以根据消息的过期时间排序，然后根据过期时间分别出队，也就是说，只有过期的消息才能被消费者消费。该队列使用场景可以用于订单超时自动关闭，当订单生成时，将其<br>创建时间及订单号等信息放到该队列中，当订单被用户手动关闭或者订单完成需要将该队列中的消息删除，删除时传入订单实体，如果匹配删除的订单需要重写订单实体的equals方法；当用户没有手动关闭订单并且<br>没有完成订单的时候，超时的订单会被消费者消费，消费者线程将订单关闭；订单实体需要实现Delayed接口，该接口有两个方法<code>compareTo</code>/<code>getDelay</code>，<code>compareTo</code>用于排序，<code>getDelay</code>用于获取剩余过期时间。</li>
+</ul>
+<h3 id="并发工具"><a href="#并发工具" class="headerlink" title="并发工具"></a>并发工具</h3><ul>
+<li>CountDownLatch：倒计时计数器，初始化大小，通过countDown()方法，每次递减1，直到0时，调用await()方法被阻塞的线程将被释放。常见示例，一等多/多等一，例如：五个运动与赛跑，同时等待裁判<br>发号施令才能同时出发，这个时候，相当于五个线程等待一个人；跑步开始过后，裁判需要等待五个人全部到达终点过后，才能宣布比赛结束，这个时候，相当于一个线程等待五个线程。</li>
+<li>Semaphore：信号量，也可以认为是限流器，指定数量的许可证（信号量），每个线程需要拿到（通过调用acquire()方法获得许可证）指定数量的许可证后才能执行下面的操作，完成过后将其释放（通过调用release()方法释放）</li>
+<li>CyclicBirrier：循环栅栏，初始化时指定屏障个数，且指定解除屏障时运行的线程。当线程调用await()方法过后，表示阻塞一个，需要达到阻塞个数过后才能被释放。例如：某公司下班班车数量有限，一次只能<br>装50个人，为了节约成本，必须要等齐50个人时才能发车，这个时候，第一个人来了，只能等待，知道50个人全部到齐过后才能发车。当51个人到来时，便安排第二辆班车（或者可以认为是第一辆车，因为<br>CyclicBirrier是可以循环使用的）。</li>
+<li>Exchanger：用于两个线程之间的数据交换，两个线程之间通过exchanger.exchange(obj)方法进行数据交换，当两个线程都执行到交换点（exchange方法）时，两个线程便可以交换数据。</li>
+<li>Condition：线程间通信工具，和Object中的await和notify类似，但是，Condition的使用必须在lock()和unlock()方法之间，用于等待和唤醒线程。</li>
+</ul>
+<h3 id="AQS-AbstractQueuedSynchronizer"><a href="#AQS-AbstractQueuedSynchronizer" class="headerlink" title="AQS(AbstractQueuedSynchronizer)"></a>AQS(AbstractQueuedSynchronizer)</h3><p>AQS是一个抽象的队列同步器，使用模板方法模式。其核心思想是，一批线程请求共享资源，如果请求的共享资源空闲，则将当前请求的线程设置为有效的工作线程，将共享资源设置为占用（锁定）的状态，如果被请求的资<br>源状态为占用（锁定），则将当前请求的线程放到FIFO队列中并将其挂起，等待被唤醒。AQS将请求共享资源的线程封装成CLH锁队列的节点Node进行锁的分配。几乎所有的并发工具都是通过AQS实现的。<br>AQS三要素</p>
+<ul>
+<li>state：state是一个被volatile关键字修饰的int变量，该变量在不同的并发工具类中有着不同的语义，而AQS的核心就是通过改变该值来控制并发安全的，而该值的原子性由CAS保证。</li>
+<li>FIFO队列：一个先进先出的队列，AQS将没有获得共享资源的线程放入到该队列中。</li>
+<li>需要实现的获取和释放state的方法：该方法需要用户自己实现，意义在于，我们可以通过AQS实现多种多样的同步器，来达到自己的需求。<br>AQS定义了两种资源共享方式，独占（只能一个线程同时访问）和共享（允许多个线程同时访问），自定义同步器需要实现的两组方法</li>
+<li>boolean tryAcquire(int):独占的方式获取资源，成功返回true，失败返回false</li>
+<li>boolean tryRelease(int):独占的方式释放资源，成功返回true，失败返回false</li>
+<li>boolean tryAcquireShared(int):共享的方式获取资源，0表示成功，正数表示成功，且有剩余资源，负数表示失败。</li>
+<li>boolean tryReleaseShared(int):共享的方式释放资源，释放后允许唤醒后续等待的节点返回true，否则返回false。</li>
+</ul>
+<h2 id="高性能缓存示例"><a href="#高性能缓存示例" class="headerlink" title="高性能缓存示例"></a>高性能缓存示例</h2><p>Computeable顶层接口</p>
+<pre class="line-numbers language-java"><code class="language-java"><span class="token comment" spellcheck="true">/**
+ * 计算接口
+ * @param &lt;K>
+ * @param &lt;V>
+ */</span>
+<span class="token annotation punctuation">@FunctionalInterface</span>
+<span class="token keyword">public</span> <span class="token keyword">interface</span> <span class="token class-name">Computeable</span><span class="token operator">&lt;</span>K<span class="token punctuation">,</span>V<span class="token operator">></span> <span class="token punctuation">{</span>
+    V <span class="token function">compute</span><span class="token punctuation">(</span>K k<span class="token punctuation">)</span> <span class="token keyword">throws</span> Exception<span class="token punctuation">;</span>
+<span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>实现Computeable接口的业务类</p>
+<pre class="line-numbers language-java"><code class="language-java"><span class="token comment" spellcheck="true">/**
+ * 没有缓存的计算
+ */</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">NoCacheCompute</span> <span class="token keyword">implements</span> <span class="token class-name">Computeable</span><span class="token operator">&lt;</span>String<span class="token punctuation">,</span>Integer<span class="token operator">></span> <span class="token punctuation">{</span>
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> Integer <span class="token function">compute</span><span class="token punctuation">(</span>String k<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">try</span> <span class="token punctuation">{</span>
+            Thread<span class="token punctuation">.</span><span class="token function">sleep</span><span class="token punctuation">(</span>3000L<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">InterruptedException</span> e<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            e<span class="token punctuation">.</span><span class="token function">printStackTrace</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">"缓存未命中，走原有逻辑"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">return</span> Integer<span class="token punctuation">.</span><span class="token function">valueOf</span><span class="token punctuation">(</span>k<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>包装NoCacheCompute带有缓存功能的Computeable实现类，这里使用包装器模式，主要作用是解耦，实现低侵入，低耦合，代码可重用性。</p>
+<pre class="line-numbers language-java"><code class="language-java"><span class="token comment" spellcheck="true">/**
+ * 该类是NoCacheCompute的包装类
+ */</span>
+<span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">CacheCompute</span><span class="token operator">&lt;</span>K<span class="token punctuation">,</span>V<span class="token operator">></span> <span class="token keyword">implements</span> <span class="token class-name">Computeable</span><span class="token operator">&lt;</span>K<span class="token punctuation">,</span>V<span class="token operator">></span> <span class="token punctuation">{</span>
+    <span class="token comment" spellcheck="true">//被包装的计算器实例</span>
+    <span class="token keyword">private</span> Computeable<span class="token operator">&lt;</span>K<span class="token punctuation">,</span>V<span class="token operator">></span> compute<span class="token punctuation">;</span>
+    <span class="token comment" spellcheck="true">//缓存容器,value使用Future是为了防止重复计算</span>
+    <span class="token keyword">private</span> <span class="token keyword">final</span> Map<span class="token operator">&lt;</span>K<span class="token punctuation">,</span> Future<span class="token operator">&lt;</span>V<span class="token operator">>></span> cache <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">ConcurrentHashMap</span><span class="token operator">&lt;</span><span class="token operator">></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token comment" spellcheck="true">//该线程池用于删除过期的key</span>
+    <span class="token keyword">private</span> <span class="token keyword">final</span> ScheduledExecutorService executorService <span class="token operator">=</span> Executors<span class="token punctuation">.</span><span class="token function">newScheduledThreadPool</span><span class="token punctuation">(</span><span class="token number">5</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token comment" spellcheck="true">/**
+     * 包装不支持缓存的计算器
+     * @param compute
+     */</span>
+    <span class="token keyword">public</span> <span class="token function">CacheCompute</span><span class="token punctuation">(</span>Computeable<span class="token operator">&lt;</span>K<span class="token punctuation">,</span>V<span class="token operator">></span> compute<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>compute <span class="token operator">=</span> compute<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token comment" spellcheck="true">/**
+     * 包装器的计算方法
+     * @param k
+     * @return
+     * @throws ExecutionException
+     * @throws InterruptedException
+     */</span>
+    <span class="token annotation punctuation">@Override</span>
+    <span class="token keyword">public</span> V <span class="token function">compute</span><span class="token punctuation">(</span>K k<span class="token punctuation">)</span> <span class="token keyword">throws</span> ExecutionException<span class="token punctuation">,</span> InterruptedException <span class="token punctuation">{</span>
+        <span class="token comment" spellcheck="true">//首先从缓存中获取执行</span>
+        Future<span class="token operator">&lt;</span>V<span class="token operator">></span> future <span class="token operator">=</span> cache<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span>k<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token comment" spellcheck="true">//若缓存没有命中，则执行以下逻辑</span>
+        <span class="token keyword">if</span><span class="token punctuation">(</span>future<span class="token operator">==</span>null<span class="token punctuation">)</span><span class="token punctuation">{</span>
+            <span class="token comment" spellcheck="true">//创建一个任务去执行被包装的业务方法，这是没有被缓存命中时会被调用的方法。</span>
+            Callable<span class="token operator">&lt;</span>V<span class="token operator">></span> callable <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-</span><span class="token operator">></span> <span class="token keyword">this</span><span class="token punctuation">.</span>compute<span class="token punctuation">.</span><span class="token function">compute</span><span class="token punctuation">(</span>k<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            FutureTask<span class="token operator">&lt;</span>V<span class="token operator">></span> futureTask <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">FutureTask</span><span class="token operator">&lt;</span><span class="token operator">></span><span class="token punctuation">(</span>callable<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token comment" spellcheck="true">//从来没有put过该key的元素</span>
+            future <span class="token operator">=</span> cache<span class="token punctuation">.</span><span class="token function">putIfAbsent</span><span class="token punctuation">(</span>k<span class="token punctuation">,</span> futureTask<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">if</span><span class="token punctuation">(</span>future<span class="token operator">==</span>null<span class="token punctuation">)</span><span class="token punctuation">{</span>
+                <span class="token comment" spellcheck="true">//将刚刚put进去的futureTask赋值给future，用于后续get方法返回结果</span>
+                future <span class="token operator">=</span> futureTask<span class="token punctuation">;</span>
+                <span class="token comment" spellcheck="true">//开始任务执行实际业务逻辑</span>
+                futureTask<span class="token punctuation">.</span><span class="token function">run</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+        <span class="token comment" spellcheck="true">//返回结果，如果任务没有执行完成，该方法会被阻塞。</span>
+        <span class="token keyword">try</span> <span class="token punctuation">{</span>
+            <span class="token keyword">return</span> future<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">ExecutionException</span> e<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">"业务逻辑报错"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            cache<span class="token punctuation">.</span><span class="token function">remove</span><span class="token punctuation">(</span>k<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">return</span> null<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">InterruptedException</span> e<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">"任务中断"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            cache<span class="token punctuation">.</span><span class="token function">remove</span><span class="token punctuation">(</span>k<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">return</span> null<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">CancellationException</span> e<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">"取消任务执行"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            cache<span class="token punctuation">.</span><span class="token function">remove</span><span class="token punctuation">(</span>k<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token keyword">return</span> null<span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+    <span class="token comment" spellcheck="true">/**
+     * 设置过期的key
+     * @param k
+     * @param timeout
+     * @return
+     * @throws ExecutionException
+     * @throws InterruptedException
+     */</span>
+    <span class="token keyword">public</span> V <span class="token function">compute</span><span class="token punctuation">(</span>K k<span class="token punctuation">,</span><span class="token keyword">long</span> timeout<span class="token punctuation">)</span> <span class="token keyword">throws</span> ExecutionException<span class="token punctuation">,</span> InterruptedException <span class="token punctuation">{</span>
+        <span class="token keyword">if</span><span class="token punctuation">(</span>timeout<span class="token operator">></span><span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">{</span>
+            <span class="token comment" spellcheck="true">//将任务交给定时线程池执行</span>
+            executorService<span class="token punctuation">.</span><span class="token function">schedule</span><span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-</span><span class="token operator">></span> <span class="token punctuation">{</span>
+                <span class="token function">expire</span><span class="token punctuation">(</span>k<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span><span class="token punctuation">,</span>timeout<span class="token punctuation">,</span>TimeUnit<span class="token punctuation">.</span>MILLISECONDS<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">return</span> <span class="token function">compute</span><span class="token punctuation">(</span>k<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token comment" spellcheck="true">/**
+     * 过期Key
+     * @param k
+     */</span>
+    <span class="token keyword">public</span> <span class="token keyword">synchronized</span> <span class="token keyword">void</span> <span class="token function">expire</span><span class="token punctuation">(</span>K k<span class="token punctuation">)</span><span class="token punctuation">{</span>
+        <span class="token comment" spellcheck="true">//首先冲缓存中获取future，若存在则执行以下逻辑</span>
+        Future<span class="token operator">&lt;</span>V<span class="token operator">></span> future <span class="token operator">=</span> cache<span class="token punctuation">.</span><span class="token function">get</span><span class="token punctuation">(</span>k<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token keyword">if</span><span class="token punctuation">(</span>future<span class="token operator">!=</span>null<span class="token punctuation">)</span><span class="token punctuation">{</span>
+            <span class="token comment" spellcheck="true">//若任务还未完成，将强制取消执行</span>
+            <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token operator">!</span>future<span class="token punctuation">.</span><span class="token function">isDone</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">{</span>
+                future<span class="token punctuation">.</span><span class="token function">cancel</span><span class="token punctuation">(</span><span class="token boolean">true</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            <span class="token comment" spellcheck="true">//不管任务是否执行完毕，都将缓存中的key删除</span>
+            cache<span class="token punctuation">.</span><span class="token function">remove</span><span class="token punctuation">(</span>k<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>k <span class="token operator">+</span> <span class="token string">"已过期"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>测试类</p>
+<pre class="line-numbers language-java"><code class="language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">Test</span> <span class="token punctuation">{</span>
+    <span class="token keyword">private</span> <span class="token keyword">final</span> <span class="token keyword">static</span> ExecutorService executorService <span class="token operator">=</span> Executors<span class="token punctuation">.</span><span class="token function">newFixedThreadPool</span><span class="token punctuation">(</span><span class="token number">100</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span>String<span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        Computeable computeable <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">NoCacheCompute</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        CacheCompute<span class="token operator">&lt;</span>String<span class="token punctuation">,</span>Integer<span class="token operator">></span> compute <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">CacheCompute</span><span class="token operator">&lt;</span><span class="token operator">></span><span class="token punctuation">(</span>computeable<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        Runnable runnable <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-</span><span class="token operator">></span> <span class="token punctuation">{</span>
+            <span class="token keyword">try</span> <span class="token punctuation">{</span>
+                Integer v <span class="token operator">=</span> compute<span class="token punctuation">.</span><span class="token function">compute</span><span class="token punctuation">(</span><span class="token string">"666"</span><span class="token punctuation">,</span> <span class="token number">5000</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>v<span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">ExecutionException</span> e<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                e<span class="token punctuation">.</span><span class="token function">printStackTrace</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span> <span class="token keyword">catch</span> <span class="token punctuation">(</span><span class="token class-name">InterruptedException</span> e<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+                e<span class="token punctuation">.</span><span class="token function">printStackTrace</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span><span class="token punctuation">;</span>
+
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> <span class="token number">1000</span><span class="token punctuation">;</span> i<span class="token operator">++</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            executorService<span class="token punctuation">.</span><span class="token function">submit</span><span class="token punctuation">(</span>runnable<span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<p>以上示例参考慕课网悟空老师的实战课《玩转Java并发工具，精通JUC，成为并发多面手》</p>
+<h2 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h2><blockquote>
 <p><a href="https://www.cnblogs.com/dolphin0520/p/3920373.html" target="_blank" rel="noopener">https://www.cnblogs.com/dolphin0520/p/3920373.html</a><br><a href="https://baijiahao.baidu.com/s?id=1612142459503895416&amp;wfr=spider&amp;for=pc&amp;isFailFlag=1" target="_blank" rel="noopener">https://baijiahao.baidu.com/s?id=1612142459503895416&amp;wfr=spider&amp;for=pc&amp;isFailFlag=1</a></p>
 </blockquote>
 
@@ -963,7 +1281,7 @@ N</div>
 
             
                 &nbsp;<i class="fa fa-area-chart"></i>&nbsp;站点总字数:&nbsp;
-                <span class="white-color">50k</span>
+                <span class="white-color">57.2k</span>
             
 
             
