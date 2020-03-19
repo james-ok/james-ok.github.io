@@ -29,6 +29,8 @@ tags:
 * ISOLATION_REPEATABLE_READ：可重复读，该方式专门为不可重复读这一现象定制，改级别可以避免脏读和不可重复读，但可能会出现幻读。MySQL默认使用此级别。
 * ISOLATION_SERIALIZABLE：可串行化，将事务按照顺序执行，即多个事务不能同时执行，该级别为最高级别，性能上有较大影响，但能避免脏读、不可重复读、幻读等问题。
 
+注意：如果想在某个业务方法中可以读取到未提交的数据，可以使用`@Transactional(isolation = Isolation.READ_UNCOMMITTED)`来设置事务的隔离级别。
+
 ## Spring事务的传播性
 事务的传播特性的产生，当多个业务嵌套调用时事务的执行策略，是Spring利用其底层资源特性来实现的。
 Spring为我们提供了以下其中事务的传播性
