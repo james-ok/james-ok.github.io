@@ -1,0 +1,990 @@
+<!DOCTYPE HTML>
+<html lang="zh-CN">
+
+
+<head><meta name="generator" content="Hexo 3.9.0">
+    <meta charset="utf-8">
+    <meta name="keywords" content="算法和数据结构, james-ok,github">
+    <meta name="description" content="很多同学一问到数据结构或者说算法都会觉得很难，不好理解，那么今天我们就来好好学习它。
+时间和空间复杂度程序是用来解决问题的，而解决问题的思路或者方法有很多种，每一种方式方法都有它的好处与坏处，每种方法在时间和空间上的消耗不尽相同，所以我们只">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="renderer" content="webkit|ie-stand|ie-comp">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>算法和数据结构 | James</title>
+    <link rel="icon" type="image/png" href="/favicon.png">
+
+    <link rel="stylesheet" type="text/css" href="/libs/awesome/css/font-awesome.min.css">
+    <link rel="stylesheet" type="text/css" href="/libs/materialize/css/materialize.min.css">
+    <link rel="stylesheet" type="text/css" href="/libs/aos/aos.css">
+    <link rel="stylesheet" type="text/css" href="/libs/animate/animate.min.css">
+    <link rel="stylesheet" type="text/css" href="/libs/lightGallery/css/lightgallery.min.css">
+    <link rel="stylesheet" type="text/css" href="/css/matery.css">
+    <link rel="stylesheet" type="text/css" href="/css/my.css">
+    <style type="text/css">
+        
+        code[class*="language-"], pre[class*="language-"] {
+            white-space: pre !important;
+        }
+        
+    </style>
+
+    <script src="/libs/jquery/jquery-2.2.0.min.js"></script>
+<link rel="stylesheet" href="/css/prism-tomorrow.css" type="text/css">
+<link rel="stylesheet" href="/css/prism-line-numbers.css" type="text/css"></head>
+
+
+<body>
+
+<header class="navbar-fixed">
+    <nav id="headNav" class="bg-color nav-transparent">
+        <div id="navContainer" class="container">
+            <div class="nav-wrapper">
+                <div class="brand-logo">
+                    <a href="/" class="waves-effect waves-light">
+                        
+                        <img src="/medias/logo.png" class="logo-img hide-on-small-only">
+                        
+                        <span class="logo-span">James</span>
+                    </a>
+                </div>
+                
+
+<a href="#" data-activates="mobile-nav" class="button-collapse"><i class="fa fa-navicon"></i></a>
+<ul class="right">
+    
+    <li class="hide-on-med-and-down">
+        <a href="/" class="waves-effect waves-light">
+            
+            <i class="fa fa-home"></i>
+            
+            <span>首页</span>
+        </a>
+    </li>
+    
+    <li class="hide-on-med-and-down">
+        <a href="/tags" class="waves-effect waves-light">
+            
+            <i class="fa fa-tags"></i>
+            
+            <span>标签</span>
+        </a>
+    </li>
+    
+    <li class="hide-on-med-and-down">
+        <a href="/categories" class="waves-effect waves-light">
+            
+            <i class="fa fa-bookmark"></i>
+            
+            <span>分类</span>
+        </a>
+    </li>
+    
+    <li class="hide-on-med-and-down">
+        <a href="/archives" class="waves-effect waves-light">
+            
+            <i class="fa fa-archive"></i>
+            
+            <span>归档</span>
+        </a>
+    </li>
+    
+    <li class="hide-on-med-and-down">
+        <a href="/about" class="waves-effect waves-light">
+            
+            <i class="fa fa-user-circle-o"></i>
+            
+            <span>关于</span>
+        </a>
+    </li>
+    
+    <li class="hide-on-med-and-down">
+        <a href="/friends" class="waves-effect waves-light">
+            
+            <i class="fa fa-address-book"></i>
+            
+            <span>友情链接</span>
+        </a>
+    </li>
+    
+    <li>
+        <a id="toggleSearch" class="waves-effect waves-light">
+            <i id="searchIcon" class="mdi-action-search" title="搜索"></i>
+        </a>
+    </li>
+
+</ul>
+
+<div class="side-nav" id="mobile-nav">
+
+    <div class="mobile-head bg-color">
+        
+        <img src="/medias/logo.png" class="logo-img circle responsive-img">
+        
+        <div class="logo-name">James</div>
+        <div class="logo-desc">
+            
+            人生苦短，若虚度年华，则短暂的人生就太长了。 —— 莎士比亚
+            
+        </div>
+    </div>
+
+    
+
+    <ul class="menu-list mobile-menu-list">
+        
+        <li>
+            <a href="/" class="waves-effect waves-light">
+                
+                <i class="fa fa-fw fa-home"></i>
+                
+                首页
+            </a>
+        </li>
+        
+        <li>
+            <a href="/tags" class="waves-effect waves-light">
+                
+                <i class="fa fa-fw fa-tags"></i>
+                
+                标签
+            </a>
+        </li>
+        
+        <li>
+            <a href="/categories" class="waves-effect waves-light">
+                
+                <i class="fa fa-fw fa-bookmark"></i>
+                
+                分类
+            </a>
+        </li>
+        
+        <li>
+            <a href="/archives" class="waves-effect waves-light">
+                
+                <i class="fa fa-fw fa-archive"></i>
+                
+                归档
+            </a>
+        </li>
+        
+        <li>
+            <a href="/about" class="waves-effect waves-light">
+                
+                <i class="fa fa-fw fa-user-circle-o"></i>
+                
+                关于
+            </a>
+        </li>
+        
+        <li>
+            <a href="/friends" class="waves-effect waves-light">
+                
+                <i class="fa fa-fw fa-address-book"></i>
+                
+                友情链接
+            </a>
+        </li>
+        
+        
+        <li><div class="divider"></div></li>
+        <li>
+            <a href="https://github.com/james-ok" class="waves-effect waves-light" target="_blank">
+                <i class="fa fa-github-square fa-fw"></i>Fork Me
+            </a>
+        </li>
+        
+    </ul>
+
+    <div class="social-link">
+    <a href="https://github.com/james-ok" class="tooltipped" target="_blank" data-tooltip="访问我的GitHub" data-position="top" data-delay="50">
+        <i class="fa fa-github"></i>
+    </a>
+
+
+
+    <a href="mailto:vip.dujuncheng@foxmail.com" class="tooltipped" target="_blank" data-tooltip="邮件联系我" data-position="top" data-delay="50">
+        <i class="fa fa-envelope-open"></i>
+    </a>
+
+
+
+    <a href="tencent://AddContact/?fromId=50&fromSubId=1&subcmd=all&uin=1261100508" class="tooltipped" data-tooltip="QQ联系我: 1261100508" data-position="top" data-delay="50">
+        <i class="fa fa-qq"></i>
+    </a>
+
+
+</div>
+</div>
+
+            </div>
+        </div>
+
+        
+        <style>
+    .nav-transparent .github-corner {
+        display: none !important;
+    }
+
+    .github-corner {
+        position: absolute;
+        z-index: 10;
+        top: 0;
+        right: 0;
+        border: 0;
+        transform: scale(1.1);
+    }
+
+    .github-corner svg {
+        color: #0f9d58;
+        fill: #fff;
+        height: 64px;
+        width: 64px;
+    }
+
+    .github-corner:hover .octo-arm {
+        animation: a 0.56s ease-in-out;
+    }
+
+    .github-corner .octo-arm {
+        animation: none;
+    }
+
+    @keyframes a {
+        0%,
+        to {
+            transform: rotate(0);
+        }
+        20%,
+        60% {
+            transform: rotate(-25deg);
+        }
+        40%,
+        80% {
+            transform: rotate(10deg);
+        }
+    }
+</style>
+
+<a href="https://github.com/james-ok" class="github-corner tooltipped hide-on-med-and-down" target="_blank"
+   data-tooltip="Fork Me" data-position="left" data-delay="50">
+    <svg viewBox="0 0 250 250" aria-hidden="true">
+        <path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path>
+        <path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2"
+              fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path>
+        <path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z"
+              fill="currentColor" class="octo-body"></path>
+    </svg>
+</a>
+        
+    </nav>
+</header>
+
+
+
+
+
+<div class="bg-cover post-cover" style="background-image: url('/medias/featureimages/5.jpg')">
+    <div class="container">
+        <div class="row">
+            <div class="col s12 m12 l12">
+                <div class="brand">
+                    <div class="description center-align post-title">
+                        算法和数据结构
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<main class="post-container content">
+
+    
+    <link rel="stylesheet" href="/libs/tocbot/tocbot.css">
+<style>
+    #articleContent h1::before,
+    #articleContent h2::before,
+    #articleContent h3::before,
+    #articleContent h4::before,
+    #articleContent h5::before,
+    #articleContent h6::before {
+        display: block;
+        content: " ";
+        height: 100px;
+        margin-top: -100px;
+        visibility: hidden;
+    }
+
+    #articleContent :focus {
+        outline: none;
+    }
+
+    .toc-fixed {
+        position: fixed;
+        top: 64px;
+    }
+
+    .toc-widget {
+        padding-left: 20px;
+    }
+
+    .toc-widget .toc-title {
+        margin: 35px 0 15px 0;
+        padding-left: 17px;
+        font-size: 1.5rem;
+        font-weight: bold;
+        line-height: 1.5rem;
+    }
+
+    .toc-widget ol {
+        padding: 0;
+        list-style: none;
+    }
+
+    #toc-content ol {
+        padding-left: 10px;
+    }
+
+    #toc-content ol li {
+        padding-left: 10px;
+    }
+
+    #toc-content .toc-link:hover {
+        color: #42b983;
+        font-weight: 700;
+        text-decoration: underline;
+    }
+
+    #toc-content .toc-link::before {
+        background-color: transparent;
+        max-height: 25px;
+    }
+
+    #toc-content .is-active-link {
+        color: #42b983;
+    }
+
+    #toc-content .is-active-link::before {
+        background-color: #42b983;
+    }
+</style>
+<div class="row">
+    <div class="col s12 m12 l9">
+        <!-- 文章内容详情 -->
+<div id="artDetail">
+    <div class="card">
+        <div class="card-content article-info">
+            <div class="row tag-cate">
+                <div class="col s7">
+                    
+                    <div class="article-tag">
+                        
+                            <a href="/tags/算法/" target="_blank">
+                                <span class="chip bg-color">算法</span>
+                            </a>
+                        
+                            <a href="/tags/数据结构/" target="_blank">
+                                <span class="chip bg-color">数据结构</span>
+                            </a>
+                        
+                            <a href="/tags/树/" target="_blank">
+                                <span class="chip bg-color">树</span>
+                            </a>
+                        
+                    </div>
+                    
+                </div>
+                <div class="col s5 right-align">
+                    
+                    <div class="post-cate">
+                        <i class="fa fa-bookmark fa-fw icon-category"></i>
+                        
+                            <a href="/categories/数据结构/" class="post-category" target="_blank">
+                                数据结构
+                            </a>
+                        
+                    </div>
+                    
+                </div>
+            </div>
+
+            <div class="post-info">
+                <div class="post-date info-break-policy">
+                    <i class="fa fa-calendar-minus-o fa-fw"></i>发布日期:&nbsp;&nbsp;
+                    2020-03-10
+                </div>
+
+                
+                    
+                    <div class="info-break-policy">
+                        <i class="fa fa-file-word-o fa-fw"></i>文章字数:&nbsp;&nbsp;
+                        4k
+                    </div>
+                    
+
+                    
+                    <div class="info-break-policy">
+                        <i class="fa fa-clock-o fa-fw"></i>阅读时长:&nbsp;&nbsp;
+                        14 分
+                    </div>
+                    
+                
+				
+				
+                    <div id="busuanzi_container_page_pv" class="info-break-policy">
+                        <i class="fa fa-eye fa-fw"></i>阅读次数:&nbsp;&nbsp;
+                        <span id="busuanzi_value_page_pv"></span>
+                    </div>
+				
+            </div>
+        </div>
+        <hr class="clearfix">
+        <div class="card-content article-card-content">
+            <div id="articleContent">
+                <p>很多同学一问到数据结构或者说算法都会觉得很难，不好理解，那么今天我们就来好好学习它。</p>
+<h2 id="时间和空间复杂度"><a href="#时间和空间复杂度" class="headerlink" title="时间和空间复杂度"></a>时间和空间复杂度</h2><p>程序是用来解决问题的，而解决问题的思路或者方法有很多种，每一种方式方法都有它的好处与坏处，每种方法在时间和空间上的消耗不尽相同，所以我们只有了解了什么是时间和空间复杂的并且掌握如何<br>来评估某种方式方法在时间和空间上的复杂度过后我们才能衡量当前这种方式的优劣程度，最后进行比较，最终选择最优的实现方式来解决问题。</p>
+<h3 id="时间复杂度"><a href="#时间复杂度" class="headerlink" title="时间复杂度"></a>时间复杂度</h3><p>时间复杂度推导原则：</p>
+<ul>
+<li>如果运行时间是常数量级，则用1表示</li>
+<li>只保留时间函数中最高阶项，例如：T(n)=0.5n^2+0.5n中最高阶项是0.5n^2</li>
+<li>如果最高阶项存在，则省去前面的系数<br>常见的时间复杂度量有(通过从小到大顺序排列)：</li>
+<li>O(1)：常量阶，运行时间为常量</li>
+<li>O(logn)：对数阶，如二分查找法</li>
+<li>O(n)：线性阶，如n个数内找最大值</li>
+<li>O(nlogn)：对数阶，如快速排序算法</li>
+<li>O(n^2)：平方阶，如选择排序，冒泡排序，需要双重循环</li>
+<li>O(n^3)：立方阶，如两个n阶矩阵的乘法运算</li>
+<li>O(2^n)：指数阶，如n个元素集合的所有子集的算法</li>
+<li>O(n!)：阶乘阶，如n个元素全部排列的算法</li>
+</ul>
+<h3 id="空间复杂度"><a href="#空间复杂度" class="headerlink" title="空间复杂度"></a>空间复杂度</h3><p>一个算法的存储量包含以下三种：</p>
+<ul>
+<li>程序本身所占用的空间</li>
+<li>调用某个算法函数的入参所占用的空间</li>
+<li>算法中的辅助变量所占用的空间<br>输入数据所占用空间取决于问题本身，和算法无关，所以我们只需要分析算法中辅助变量所占用的额外空间。<br>如果算法中所使用的辅助变量和问题规模n无关，则它的空间复杂度为O(1)<br>注意：空间复杂度比时间复杂度分析要少。对于递归算法来说，代码通常较短，占用空间通常较少，空间复杂度较低；对于非递归算法来说，代码较长，占用空间较大，空间复杂度较高。</li>
+</ul>
+<h2 id="数组、链表、跳表"><a href="#数组、链表、跳表" class="headerlink" title="数组、链表、跳表"></a>数组、链表、跳表</h2><ul>
+<li>数组在内存中开辟一块连续的内存空间，并在此空间中存放数据，数组的特点是读取较快，写入较慢。数组从头插入和从尾部插入的时间复杂度是O(1)，但是从指定下标开始插入，由于需要挪动后面的元素<br>所有时间复杂度是O(n)，但是读取就很快了，直接通过下标就能直接返回，时间复杂度是O(1)</li>
+<li>链表可以分为单链表循环链表和双向链表，java中LinkedList就是一个标准的双向链表，特点是增删改比较快，读取较慢。链表的元素添加只需要将需要插入位置的前一个节点的next指针指向需要添加的元素上，<br>然后将当前元素的next指针指向指向当前节点的节点原本的next地址。删除一个元素只需要将当前节点的前一个节点的next指针指向当前节点的next指针地址，查询需要从头节点开始一个一个往下找。<br>链表的增删改在时间复杂度上是O(1)，但是查询的时间复杂度是O(n)</li>
+<li>跳表是为了优化链表的查询缺陷，实际上是一种空间换时间的思维方式。通过增加多级索引的方式来达到快速查找，索引的每一级是上一级索引的两倍2-4-8-16。跳表在时间复杂度上就是O(logn)，<br>空间复杂度为O(n)</li>
+</ul>
+<h2 id="栈、队列"><a href="#栈、队列" class="headerlink" title="栈、队列"></a>栈、队列</h2><ul>
+<li>栈的特点是先进后出，可以将栈看成是一个桶，先放的东西在下面，而我们只能从上面开始拿东西。一般用于有较强顺序相关性的场景（例如，编译器符号开闭语法检测），栈的操作只有两种，压入栈和弹出栈，<br>且只能操作栈顶，只有栈顶元素是可访问的。栈的实现由两种，链表和数组。</li>
+<li>队列特点是先进先出，队列在生活中场景就是排队，队列一般由数组和链表实现。</li>
+</ul>
+<h2 id="哈希表"><a href="#哈希表" class="headerlink" title="哈希表"></a>哈希表</h2><p>哈希表也称散列表，是将关键码（key）进行Hash得到表中一个位置（下标）来直接访问的，这个函数称为哈希函数。一个简单的hash函数是将一个字符串中的每一个字符的ASCII码加在一起得到hashcode然后在mod上<br>一个数（一般是表的长度）来得到它在表中的index，在java中有一个HashCode函数，不同的字符串通过哈希函数计算出来的结果有可能相同，这种现象我们称之为哈希碰撞，这种想象很常见，那么如果出现哈希碰撞<br>一般会怎么解决呢，在java中是通过新增了一个维度，也就是在相同的位置新增一个链表，这种方式称为拉链式解决冲突法，但是这种方式有个不好之处在于在查询数据的时候之前可以直接通过hash函数直接读取，<br>现在通过hash过后还需要在链表上便利，时间复杂度从O(1)升至O(n)，java中HashMap在JDK1.7是使用数据+链表实现，在JDK1.8以后，使用数组+链表+红黑树实现，在链表长度达到指定阈值（默认为8）时转为红黑树，<br>旨在优化HashMap的查询时间复杂度，从之前的O(n)提升至O(logn)。</p>
+<h2 id="二叉树"><a href="#二叉树" class="headerlink" title="二叉树"></a>二叉树</h2><ul>
+<li>二叉树：也就是他的儿子节点只有两个（左子树和右子树），且树的叶子节点不会指向父节点或者兄弟节点（没有环，有环的称为图）。<br>树的遍历有三种，如下：<ol>
+<li>前序遍历：根-左-右</li>
+<li>中序遍历：左-根-右</li>
+<li>后序遍历：左-右-根</li>
+</ol>
+</li>
+<li>满二叉树：一颗二叉树中所有节点要么没有子节点，要么左右子节点都有。一棵满二叉树树有多少个节点可以用公式<code>n = (2^k)-1</code>计算得出，其中n表示它的节点数，k表示它的深度。</li>
+<li>完全二叉树：完全二叉树是在满二叉树上延伸出来的，假设一棵树的深度为h，且除第h层以外的1~h-1是一颗满二叉树，并且第h层的所有节点都连续几种在左边，那么这就是一颗完全二叉树。</li>
+<li>二叉搜索树（二叉查找树）：在普通二叉树的基础上，各个节点的所有左子树的数据小于根节点，各个节点的所有右子树的数据大于根节点。</li>
+</ul>
+<h2 id="递归"><a href="#递归" class="headerlink" title="递归"></a>递归</h2><p>先递进，再回归。函数直接或者间接的调用自身函数，那么我们称该函数为递归函数，递归方法有四个部分组成，递归终结、逻辑、递归到下一层、数据清理，常见案例有求N的阶乘或者斐波那契数列，代码模板：</p>
+<pre><code>public Objcet recur(Objcet... params) {
+    //terminator
+    if(prams...){
+        return x;
+    }
+
+    //process current logic
+    process(params);
+
+    //drill down
+    Objcet result = recur(params...);
+
+    //restore current status
+
+    return result;
+}</code></pre><h2 id="分治和回溯"><a href="#分治和回溯" class="headerlink" title="分治和回溯"></a>分治和回溯</h2><ul>
+<li>分治：分治是将一个大的问题分解成多个规模较小的，且结构和原问题相似的子问题，递归计算这些小问题，最后将结果合并，就得到了原问题的结果。代码模板：<pre><code>def divide_conquer(problem,param1,param2,……):
+# resursion terminator
+if problem is None:
+  print_result
+  return 
+# prepare data
+data = prepare_data(problem)
+subproblems=split_problem(problem,data)
+</code></pre></li>
+</ul>
+<h1 id="conquer-subproblems"><a href="#conquer-subproblems" class="headerlink" title="conquer subproblems"></a>conquer subproblems</h1><p>subresult1 = self.divide_conquer(subpromblems[0],p1,……)<br>subresult2 = self.divide_conquer(subpromblems[1],p1,……)<br>subresult3 = self.divide_conquer(subpromblems[2],p1,……)<br>……</p>
+<h1 id="process-and-generate-the-final-result"><a href="#process-and-generate-the-final-result" class="headerlink" title="process and generate the final result"></a>process and generate the final result</h1><p>result = process_result(subresult1,subresult2,subresult3,……)</p>
+<pre><code>* 回溯：回溯采用分布试错的方式，它尝试分布的去解决某一个问题。它在通过尝试过后发现现有的答案不能得到正确的解答过后回到上一步或者上几步重新选择其他的分布进行计算。回溯相当于走迷宫，
+我们走迷宫的目标就是从迷宫中走出来，那么回溯求教就相当于是找出口，我们走到一个路口发现有多种选择，然后我们随便找一条路继续走，当我们走到该条路的尽头时发现没有路了，这个时候我们就会
+倒回去重新选择其他的路，直到走出迷宫。
+
+
+## 深度优先(DFS)和广度优先(BFS)
+深度优先和广度优先算法是针对图和树的查找或遍历算法
+* 深度优先遍历：顾名思义，也就是从根节点开始从左子树一直往树的最深处遍历，直到没有子节点再找该节点的根节点的右子树继续使用深度优先算法遍历，代码模板：
+```java
+class Test{
+    public void dfs(TreeNode node) {
+        if(node==null){
+            return;
+        }
+        System.out.println(node);
+        if(node.left!=null){
+            dfs(node.left);
+        }
+        if(node.right!=null){
+            dfs(node.right);
+        }
+    }
+}</code></pre><ul>
+<li>广度优先遍历：广度优先也就是从根节点开始下面一层一层的遍历，想水波纹一样往下扩散，在每一层中从左向右（也可以从右向左）依次访问，访问完这一层过后访问下一层，直到没有节点可以访问，代码模板：<pre class="line-numbers language-java"><code class="language-java"><span class="token keyword">class</span> <span class="token class-name">Test</span> <span class="token punctuation">{</span>
+  <span class="token keyword">public</span> <span class="token keyword">void</span> <span class="token function">bfs</span><span class="token punctuation">(</span>TreeNode node<span class="token punctuation">)</span><span class="token punctuation">{</span>
+      Queue<span class="token operator">&lt;</span>TreeNode<span class="token operator">></span> queue <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">ArrayQueue</span><span class="token operator">&lt;</span><span class="token operator">></span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token keyword">if</span><span class="token punctuation">(</span>node<span class="token operator">==</span>null<span class="token punctuation">)</span><span class="token punctuation">{</span>
+          <span class="token keyword">return</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span>
+      queue<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>node<span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token keyword">while</span><span class="token punctuation">(</span><span class="token operator">!</span>queue<span class="token punctuation">.</span><span class="token function">isEmpty</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">{</span>
+          <span class="token comment" spellcheck="true">//从队列中获取节点并删除</span>
+          TreeNode treeNode <span class="token operator">=</span> queue<span class="token punctuation">.</span><span class="token function">remove</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+          <span class="token keyword">if</span><span class="token punctuation">(</span>treeNode<span class="token punctuation">.</span>left<span class="token operator">!=</span>null<span class="token punctuation">)</span><span class="token punctuation">{</span>
+              queue<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>treeNode<span class="token punctuation">.</span>left<span class="token punctuation">)</span><span class="token punctuation">;</span>
+          <span class="token punctuation">}</span>
+          <span class="token keyword">if</span><span class="token punctuation">(</span>treeNode<span class="token punctuation">.</span>right<span class="token operator">!=</span>null<span class="token punctuation">)</span><span class="token punctuation">{</span>
+              queue<span class="token punctuation">.</span><span class="token function">add</span><span class="token punctuation">(</span>treeNode<span class="token punctuation">.</span>right<span class="token punctuation">)</span><span class="token punctuation">;</span>
+          <span class="token punctuation">}</span>
+          System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>treeNode<span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span>
+<span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+</li>
+</ul>
+<h2 id="贪心算法"><a href="#贪心算法" class="headerlink" title="贪心算法"></a>贪心算法</h2><p>贪心算法旨在每次选择都采取局部最优解，从来理想达到全局最优解，他和动态规划的区别在于，贪心算法的每次选择都是局部最优的，且不能回退，而动态规划则会保存之前的结果，并根据之前的结果<br>和当前的结果进行对比，然后选择，是支持回退的。如果一个问题可以通过贪心算法解决，那么贪心算法一般是解决该问题的最好办法。<br>适用场景：一个问题可以分解成多个子问题，而各个子问题的优劣可以决定全局的优劣。</p>
+<h2 id="二分查找"><a href="#二分查找" class="headerlink" title="二分查找"></a>二分查找</h2><p>二分查找也叫折半查找，旨在每次查找时取表中元素最中间位置（长度/2）和需要查找的元素进行比较，如果相等，说明已经找到，直接返回，如果大于或者小于根据排序规则选择向左还是向右继续查找。<br>该算法必须要求表中元素必须是有序排列的。例如：现在有一个1-100的有序（从小到大升序）的数组，需要从中找出一个元素（比如70），问使用二分查找算法需要找几次。首先取数组中间位置元素50，<br>由于50&lt;70，所以这个时候我们需要向右继续查找，然后再取中间元素75，由于75&gt;70所有向左查找，以此类推，63,69,72，71,70，所以，最终查找了7次，如果使用顺序查找的话，需要70次才能找到。所以<br>二分查找的时间复杂度从顺序查找的O(n)下降到了O(logn)，代码：</p>
+<pre class="line-numbers language-java"><code class="language-java"><span class="token keyword">public</span> <span class="token keyword">class</span> <span class="token class-name">DemoMain</span> <span class="token punctuation">{</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">main</span><span class="token punctuation">(</span>String<span class="token punctuation">[</span><span class="token punctuation">]</span> args<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> nums <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">int</span><span class="token punctuation">[</span><span class="token number">100</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+        <span class="token keyword">for</span> <span class="token punctuation">(</span><span class="token keyword">int</span> i <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> nums<span class="token punctuation">.</span>length<span class="token punctuation">;</span> i<span class="token operator">++</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            nums<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">=</span> i <span class="token operator">*</span> <span class="token number">2</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+        <span class="token keyword">int</span> i <span class="token operator">=</span> <span class="token function">find</span><span class="token punctuation">(</span>nums<span class="token punctuation">,</span> <span class="token number">70</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">"下标："</span> <span class="token operator">+</span> i<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">public</span> <span class="token keyword">static</span> <span class="token keyword">int</span> <span class="token function">find</span><span class="token punctuation">(</span><span class="token keyword">int</span><span class="token punctuation">[</span><span class="token punctuation">]</span> nums<span class="token punctuation">,</span><span class="token keyword">int</span> x<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        <span class="token keyword">int</span> start <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token keyword">int</span> end <span class="token operator">=</span> nums<span class="token punctuation">.</span>length<span class="token punctuation">;</span>
+        <span class="token keyword">int</span> count <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+        <span class="token keyword">while</span> <span class="token punctuation">(</span><span class="token boolean">true</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+            <span class="token keyword">int</span> index <span class="token operator">=</span> start <span class="token operator">+</span> <span class="token punctuation">(</span>end <span class="token operator">-</span> start<span class="token punctuation">)</span> <span class="token operator">/</span> <span class="token number">2</span><span class="token punctuation">;</span>
+            count<span class="token operator">++</span><span class="token punctuation">;</span>
+            <span class="token keyword">if</span><span class="token punctuation">(</span>nums<span class="token punctuation">[</span>index<span class="token punctuation">]</span> <span class="token operator">==</span> x<span class="token punctuation">)</span><span class="token punctuation">{</span>
+                System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">"查找了："</span> <span class="token operator">+</span> count <span class="token operator">+</span> <span class="token string">"次"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token keyword">return</span> index<span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">if</span><span class="token punctuation">(</span>nums<span class="token punctuation">[</span>index<span class="token punctuation">]</span> <span class="token operator">></span> x<span class="token punctuation">)</span><span class="token punctuation">{</span>
+                end <span class="token operator">=</span> index<span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">if</span><span class="token punctuation">(</span>nums<span class="token punctuation">[</span>index<span class="token punctuation">]</span> <span class="token operator">&lt;</span> x<span class="token punctuation">)</span><span class="token punctuation">{</span>
+                start <span class="token operator">=</span> index<span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            <span class="token keyword">if</span><span class="token punctuation">(</span><span class="token punctuation">(</span>end <span class="token operator">-</span> start<span class="token punctuation">)</span><span class="token operator">==</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">{</span>
+                System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">"查找了："</span> <span class="token operator">+</span> count <span class="token operator">+</span> <span class="token string">"次"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span><span class="token string">"没有找到"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+                <span class="token keyword">return</span> <span class="token number">0</span><span class="token punctuation">;</span>
+            <span class="token punctuation">}</span>
+            System<span class="token punctuation">.</span>out<span class="token punctuation">.</span><span class="token function">println</span><span class="token punctuation">(</span>nums<span class="token punctuation">[</span>index<span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<h2 id="动态规划"><a href="#动态规划" class="headerlink" title="动态规划"></a>动态规划</h2><h2 id="字典树和并查集"><a href="#字典树和并查集" class="headerlink" title="字典树和并查集"></a>字典树和并查集</h2><h2 id="高级搜索（剪枝，双向BFS）"><a href="#高级搜索（剪枝，双向BFS）" class="headerlink" title="高级搜索（剪枝，双向BFS）"></a>高级搜索（剪枝，双向BFS）</h2><h2 id="红黑树和AVL树"><a href="#红黑树和AVL树" class="headerlink" title="红黑树和AVL树"></a>红黑树和AVL树</h2><p>如果一棵树的所有节点只有左子树或者只有右子树，那么就退化成了一个链表，链表的查询时间复杂度是线性的，也就是O(n)，在这种极端的情况下，二叉树的效率也会受到影响，所以才引申除了平衡二叉树。</p>
+<ul>
+<li>AVL树：又称平衡二叉搜索树，它可以是一颗空树也可以是一颗左右子树的深度差绝对值小于等于1的二叉树，并且左右子树都是一颗平衡二叉树。<ol>
+<li>平衡因子：某节点的左右子树的深度差被称为平衡因子。平衡二叉搜索树的平衡因子只能是-1,0,1</li>
+<li>在平衡二叉搜索树中添加节点有可能会导致其失去平衡，所以在每次插入的时候需要去调整，使之保持平衡二叉搜索树的特性。当一个节点的左右子树平衡因子绝对值大于1时，就需要进行调整。<br>调整的方式有如下四种，分别对应几种场景：<br> i. LL（右旋）：当某个节点的子树节点是左左型时，就需要向右旋转。<br> i. RR（左旋）：当某个节点的子树节点是右右型时，就需要向左旋转。<br> i. LR（左右旋）：当某个节点的子树节点是左右型时，就需要先向左旋转，再向右旋转。<br> i. RL（右左旋）：当某个节点的子树节点是右左型时，就需要先向右旋转，再向左旋转。</li>
+<li>AVL树的缺点，强平衡导致每次插入节点时效率较低，因为每次都要去判断当前这棵树的平衡因子绝对值是否大于1，如果大于的话就需要进行平衡旋转。</li>
+</ol>
+</li>
+<li>红黑树：又称RB树，为了避免每次插入都去调整整棵树的平衡，红黑树在AVL树的基础上做了优化，它是一颗近似平衡的二叉搜索树，旨在提交插入等操作的性能。它的节点性质如下：<ol>
+<li>节点只能是红色或黑色。</li>
+<li>根节点必须是黑色。</li>
+<li>每个红色节点的两个子节点都是黑色。(从每个叶子到根的所有路径上不能有两个连续的红色节点)</li>
+<li>从任一节点到其每个叶子的所有路径都包含相同数目的黑色节点。<br>也就是说，它可以容忍最高结点的高度不高于最低结点的高度的两倍，如果超越了该限制则触发平衡调整。</li>
+</ol>
+</li>
+</ul>
+<h2 id="位运算"><a href="#位运算" class="headerlink" title="位运算"></a>位运算</h2><p>现代计算机的所有数据都是以二进制的形式存储在设备中的，也就是只有1,0两种状态。位运算符有六种：</p>
+<ul>
+<li>&amp;：按位与，如果两个位都为1，结果才为1</li>
+<li>|：按位或，如果两个位都为0，结果才为0</li>
+<li>^：异或，两个位相同为0，相异为1</li>
+<li>~：取反，0变1,1变0</li>
+<li>&lt;&lt;：左移，各二进位向左移动若干位（具体多少位由&lt;&lt;后面的数字指定），高位丢弃，低位补0</li>
+<li>&gt;&gt;：右移，各二进位向右移动若干位（具体多少位由&gt;&gt;后面的数字指定），低位丢弃，高位用符号位补充</li>
+<li>&gt;&gt;&gt;：无符号右移，和右移的区别在于，不管当前是正号还是负号，高位都补0，低位丢弃</li>
+</ul>
+<h2 id="布隆过滤器和LRU缓存淘汰算法"><a href="#布隆过滤器和LRU缓存淘汰算法" class="headerlink" title="布隆过滤器和LRU缓存淘汰算法"></a>布隆过滤器和LRU缓存淘汰算法</h2><h2 id="排序算法"><a href="#排序算法" class="headerlink" title="排序算法"></a>排序算法</h2><h2 id="高级动态规划"><a href="#高级动态规划" class="headerlink" title="高级动态规划"></a>高级动态规划</h2><h2 id="字符串算法"><a href="#字符串算法" class="headerlink" title="字符串算法"></a>字符串算法</h2>
+            </div>
+            <hr/>
+
+            
+
+            <link rel="stylesheet" type="text/css" href="/libs/share/css/share.min.css">
+
+<div id="article-share">
+    
+    <div class="social-share" data-disabled="qzone" data-wechat-qrcode-helper="<p>微信里点“发现”->“扫一扫”二维码便可查看分享。</p>"></div>
+    
+</div>
+
+<script src="/libs/share/js/social-share.min.js"></script>
+
+            <div class="reprint">
+                <p>
+                    <span class="reprint-tip">
+                        <i class="fa fa-exclamation-circle"></i>&nbsp;&nbsp;转载请注明:
+                    </span>
+                    <a href="http://blog.easyjava.xyz" class="b-link-green">James</a>
+                    <i class="fa fa-angle-right fa-lg fa-fw text-color"></i>
+                    <a href="/2020/03/10/算法和数据结构/" class="b-link-green">算法和数据结构</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    
+        <link rel="stylesheet" href="/libs/gitalk/gitalk.css">
+<link rel="stylesheet" href="/css/my-gitalk.css">
+
+<div class="card gitalk-card" data-aos="fade-up">
+    <div id="gitalk-container" class="card-content"></div>
+</div>
+
+<script src="/libs/gitalk/gitalk.min.js"></script>
+<script>
+    let gitalk = new Gitalk({
+        clientID: 'a9858e7f3645ea83f878',
+        clientSecret: '71d9c3a127b0215d02928dd47776ba2c72aad2cf',
+        repo: 'james-ok.github.io',
+        owner: 'james-ok',
+        admin: "james-ok",
+        id: '2020-03-10T17-12-23',
+        distractionFreeMode: false  // Facebook-like distraction free mode
+    });
+
+    gitalk.render('gitalk-container');
+</script>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+<article id="prenext-posts" class="prev-next articles">
+    <div class="row article-row">
+        
+        <div class="article col s12 m6" data-aos="fade-up">
+            <div class="article-badge left-badge text-color">
+                <i class="fa fa-chevron-left"></i>&nbsp;上一篇</div>
+            <div class="card">
+                <a href="/2020/03/10/开发中常用的软件及优秀插件/">
+                    <div class="card-image">
+                        
+                        
+                        <img src="/medias/featureimages/17.jpg" class="responsive-img" alt="开发中常用的软件及优秀插件">
+                        
+                        <span class="card-title">开发中常用的软件及优秀插件</span>
+                    </div>
+                </a>
+                <div class="card-content article-content">
+                    <div class="summary">IDEA插件
+LeetCode Editor该插件是LeetCode网站的刷题神器
+Free MyBatis Plugin提供Mapper接口到xml配置文件的跳转等功能
+MyBatis Log Plugin可以将控制台中的sql语句分离处</div>
+                    <div class="publish-info">
+                        <span class="publish-date">
+                            <i class="fa fa-clock-o fa-fw icon-date"></i>2020-03-10
+                        </span>
+                        <span class="publish-author">
+                            
+                            <i class="fa fa-bookmark fa-fw icon-category"></i>
+                            
+                            <a href="/categories/开发软件/" class="post-category" target="_blank">
+                                    开发软件
+                                </a>
+                            
+                            
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="card-action article-tags">
+                    
+                    <a href="/tags/插件/" target="_blank">
+                        <span class="chip bg-color">插件</span>
+                    </a>
+                    
+                </div>
+                
+            </div>
+        </div>
+        
+        
+        <div class="article col s12 m6" data-aos="fade-up">
+            <div class="article-badge right-badge text-color">
+                下一篇&nbsp;<i class="fa fa-chevron-right"></i>
+            </div>
+            <div class="card">
+                <a href="/2020/01/09/ELK实战/">
+                    <div class="card-image">
+                        
+                        
+                        <img src="/medias/featureimages/6.jpg" class="responsive-img" alt="ELK实战">
+                        
+                        <span class="card-title">ELK实战</span>
+                    </div>
+                </a>
+                <div class="card-content article-content">
+                    <div class="summary">ElasticSearch安装
+下载 
+解压：tar -zxvf elasticsearch-7.5.1-linux-x86_64.tar.gz
+进入ElasticSearch目录：cd elasticsearch-7.5.1
+启动：sh </div>
+                    <div class="publish-info">
+                            <span class="publish-date">
+                                <i class="fa fa-clock-o fa-fw icon-date"></i>2020-01-09
+                            </span>
+                        <span class="publish-author">
+                            
+                            <i class="fa fa-bookmark fa-fw icon-category"></i>
+                            
+                            <a href="/categories/ELK/" class="post-category" target="_blank">
+                                    ELK
+                                </a>
+                            
+                            
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="card-action article-tags">
+                    
+                    <a href="/tags/ElasticSearch/" target="_blank">
+                        <span class="chip bg-color">ElasticSearch</span>
+                    </a>
+                    
+                    <a href="/tags/Kibana/" target="_blank">
+                        <span class="chip bg-color">Kibana</span>
+                    </a>
+                    
+                    <a href="/tags/LogStash/" target="_blank">
+                        <span class="chip bg-color">LogStash</span>
+                    </a>
+                    
+                </div>
+                
+            </div>
+        </div>
+        
+    </div>
+</article>
+</div>
+
+
+<script>
+    $('#articleContent').on('copy', function (e) {
+        // IE8 or earlier browser is 'undefined'
+        if (typeof window.getSelection === 'undefined') return;
+
+        var selection = window.getSelection();
+        // if the selection is short let's not annoy our users.
+        if (('' + selection).length < Number.parseInt('120')) {
+            return;
+        }
+
+        // create a div outside of the visible area and fill it with the selected text.
+        var bodyElement = document.getElementsByTagName('body')[0];
+        var newdiv = document.createElement('div');
+        newdiv.style.position = 'absolute';
+        newdiv.style.left = '-99999px';
+        bodyElement.appendChild(newdiv);
+        newdiv.appendChild(selection.getRangeAt(0).cloneContents());
+
+        // we need a <pre> tag workaround.
+        // otherwise the text inside "pre" loses all the line breaks!
+        if (selection.getRangeAt(0).commonAncestorContainer.nodeName === 'PRE') {
+            newdiv.innerHTML = "<pre>" + newdiv.innerHTML + "</pre>";
+        }
+
+        var url = document.location.href;
+        newdiv.innerHTML += '<br />'
+            + '来源: James<br />'
+            + '作者: James<br />'
+            + '链接: <a href="' + url + '">' + url + '</a><br />'
+            + '本文章著作权归作者所有，任何形式的转载都请注明出处。';
+
+        selection.selectAllChildren(newdiv);
+        window.setTimeout(function () {bodyElement.removeChild(newdiv);}, 200);
+    });
+</script>
+
+    </div>
+    <div class="col l3 hide-on-med-and-down">
+        <div class="toc-widget">
+            <div class="toc-title"><i class="fa fa-list-alt"></i>&nbsp;&nbsp;目录</div>
+            <div id="toc-content"></div>
+        </div>
+    </div>
+</div>
+
+<script src="/libs/tocbot/tocbot.min.js"></script>
+<script>
+    $(function () {
+        tocbot.init({
+            tocSelector: '#toc-content',
+            contentSelector: '#articleContent',
+            headingsOffset: -($(window).height() * 0.4 - 45),
+            // headingsOffset: -205,
+            headingSelector: 'h2, h3, h4'
+        });
+
+        // modify the toc link href to support Chinese.
+        let i = 0;
+        let tocHeading = 'toc-heading-';
+        $('#toc-content a').each(function () {
+            $(this).attr('href', '#' + tocHeading + (++i));
+        });
+
+        // modify the heading title id to support Chinese.
+        i = 0;
+        $('#articleContent').children('h2, h3, h4').each(function () {
+            $(this).attr('id', tocHeading + (++i));
+        });
+
+        // Set scroll toc fixed.
+        let tocHeight = parseInt($(window).height() * 0.4 - 64);
+        let $tocWidget = $('.toc-widget');
+        $(window).scroll(function () {
+            let scroll = $(window).scrollTop();
+            /* add post toc fixed. */
+            if (scroll > tocHeight) {
+                $tocWidget.addClass('toc-fixed');
+            } else {
+                $tocWidget.removeClass('toc-fixed');
+            }
+        });
+    });
+</script>
+    
+
+</main>
+
+
+<footer class="page-footer bg-color">
+    <div class="container row center-align">
+        <div class="col s12 m8 l8 copy-right">
+            本站由&copy;<a href="blog.easyjava.xyz" target="_blank">James</a>基于
+            <a href="https://hexo.io/" target="_blank">Hexo</a> 的
+            <a href="https://github.com/blinkfox/hexo-theme-matery" target="_blank">hexo-theme-matery</a>主题搭建.
+
+            
+                &nbsp;<i class="fa fa-area-chart"></i>&nbsp;站点总字数:&nbsp;
+                <span class="white-color">64.1k</span>
+            
+
+            
+			
+                <br>
+                
+                <span id="busuanzi_container_site_pv">
+                    <i class="fa fa-heart-o"></i>
+                    本站总访问量 <span id="busuanzi_value_site_pv" class="white-color"></span>
+                </span>
+                
+                
+                <span id="busuanzi_container_site_uv">
+                    <i class="fa fa-users"></i>
+                    次,&nbsp;访客数 <span id="busuanzi_value_site_uv" class="white-color"></span> 人.
+                </span>
+                
+            
+        </div>
+        <div class="col s12 m4 l4 social-link social-statis">
+    <a href="https://github.com/james-ok" class="tooltipped" target="_blank" data-tooltip="访问我的GitHub" data-position="top" data-delay="50">
+        <i class="fa fa-github"></i>
+    </a>
+
+
+
+    <a href="mailto:vip.dujuncheng@foxmail.com" class="tooltipped" target="_blank" data-tooltip="邮件联系我" data-position="top" data-delay="50">
+        <i class="fa fa-envelope-open"></i>
+    </a>
+
+
+
+    <a href="tencent://AddContact/?fromId=50&fromSubId=1&subcmd=all&uin=1261100508" class="tooltipped" data-tooltip="QQ联系我: 1261100508" data-position="top" data-delay="50">
+        <i class="fa fa-qq"></i>
+    </a>
+
+
+</div>
+    </div>
+</footer>
+
+<div class="progress-bar"></div>
+
+
+<!-- 搜索遮罩框 -->
+<div id="searchModal" class="modal">
+    <div class="modal-content">
+        <div class="search-header">
+            <span class="title"><i class="fa fa-search"></i>&nbsp;&nbsp;搜索</span>
+            <input type="search" id="searchInput" name="s" placeholder="请输入搜索的关键字"
+                   class="search-input" autofocus="">
+        </div>
+        <div id="searchResult"></div>
+    </div>
+</div>
+
+<script src="/js/search.js"></script>
+<script type="text/javascript">
+    searchFunc("/" + "search.xml", 'searchInput', 'searchResult');
+</script>
+<!-- 回到顶部按钮 -->
+<div id="backTop" class="top-scroll">
+    <a class="btn-floating btn-large waves-effect waves-light" href="#!">
+        <i class="fa fa-angle-up"></i>
+    </a>
+</div>
+
+
+<script src="/libs/materialize/js/materialize.min.js"></script>
+<script src="/libs/masonry/masonry.pkgd.min.js"></script>
+<script src="/libs/aos/aos.js"></script>
+<script src="/libs/scrollprogress/scrollProgress.min.js"></script>
+<script src="/libs/lightGallery/js/lightgallery-all.min.js"></script>
+<script src="/js/matery.js"></script>
+
+<!-- Global site tag (gtag.js) - Google Analytics -->
+
+
+
+    <script src="/libs/others/clicklove.js"></script>
+
+
+    <script async src="/libs/others/busuanzi.pure.mini.js"></script>
+
+
+</body>
+</html>
