@@ -64,12 +64,12 @@ Maven大家都不陌生，做java的同学每天都在和maven打交道，不知
 <distributionManagement>
   <repository>
     <id>releases</id>
-    <url>http://ip:port/repository/releases/</url>
+    <url>http://ip:port/repository/maven-releases/</url>
   </repository>
  
   <snapshotRepository>
     <id>snapshots</id>
-    <url>http://ip:port/repository/snapshots/</url>
+    <url>http://ip:port/repository/maven-snapshots/</url>
   </snapshotRepository>
 </distributionManagement>
 ```
