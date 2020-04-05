@@ -35,3 +35,12 @@ yum install docker-ce docker-ce-cli containerd.io
 ```shell
 systemctl start docker
 ```
+
+## Docker-Compose安装
+```
+#下载docket-compose
+curl -L https://github.com/docker/compose/releases/download/1.17.1/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose
+
+#修改权限
+chmod +x /usr/local/bin/docker-compose
+```
