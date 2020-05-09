@@ -59,6 +59,28 @@ systemctl start docker
 * USER：指定执行RUN、CMD、ENTRYPOINT命令时的用户
 * HEALTHCHECK：健康检查，告诉docker容器如何检查应用程序是否还在正常运行
 
+## Docker网络
+我们知道在同一台宿主机上的多个docker容器，各个容器之间是可以互相通信的，那么为什么可以互相通信，这个就要从Docker的网络说起。
+想要搞清楚Docker的网络，必须要先搞明白Linux的网络命名空间。
+在Linux的网络中，各个网络的命名空间是互相隔离的，也就是互不干扰，我们可以为每个命名空间分配多个虚拟网卡（veth），veth是成对出现的，就像一根管道，管道的两端可以互相
+通信，假如我们现在创建两个互不干扰的网络命名空间test1/test2，分别为两个命名空间分配虚拟网卡，由于虚拟网卡是成对出现的，我们将一对中的一个分配给test1，另一个分配给
+test2，这样就想到与将两个命名空间用管道连接起来了，命令如下：
+```
+[root@node ~]# ip netns add test1
+[root@node ~]# ip netns add test2
+[root@node ~]# ip netns list
+test1
+test2
+[root@node ~]# ip link add veth0 type veth peer name veth1
+[root@node ~]# ip link list
+[root@node ~]# ip link set veth0 netns test1 
+[root@node ~]# ip link set veth1 netns test2
+
+[root@node ~]# ip netns exec test1 ip link list
+[root@node ~]# ip netns exec test2 ip link list
+```
+那么这样就能互相通信了吗，不能，因为这两个命名空间目前还没有运行并且我们并没有为他们分配ip，
+
 ## Docker-Compose安装
 ```
 #下载docket-compose
