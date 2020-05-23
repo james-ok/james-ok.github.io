@@ -38,6 +38,25 @@ systemctl start docker
 
 ## Docker常用命令及使用技巧
 
+### 阿里云镜像加速
+1.登录阿里云控制台，[传送门](https://cr.console.aliyun.com/cn-hangzhou/instances/mirrors)
+2.copy配置到服务器执行即可，类似以下
+```
+sudo mkdir -p /etc/docker
+sudo tee /etc/docker/daemon.json <<-'EOF'
+{
+  "registry-mirrors": ["https://gqjyyepn.mirror.aliyuncs.com"]
+}
+EOF
+sudo systemctl daemon-reload
+sudo systemctl restart docker
+```
+
+### 将镜像push到hub.docker.com
+1.在docker客户端登录到docker hub，使用`docker login`默认使用的是hub.docker.com
+2.打一个tag，这个tag必须是以docker hub的用户名开头，例如`docker tag hello-world:latest soeasydocker/hello:v1.0`，这个时候在image列表就多了一个soeasydocker/hello镜像
+3.推送到hub.docker.com，使用命令`docker push soeasydocker/hello`
+
 ### 构建image的几种方式
 * 容器构建镜像：docker container commit containerId imageName:tag
 * Dockerfile构建镜像
@@ -89,3 +108,32 @@ curl -L https://github.com/docker/compose/releases/download/1.17.1/docker-compos
 #修改权限
 chmod +x /usr/local/bin/docker-compose
 ```
+
+
+## Docker Harbor搭建
+Harbor依赖docker和docker-compose，所以，在安装harbor之前必须先安装docker和compose。Harbor的安装有两种方式，在线安装和离线安装，这里使用在线安装。
+
+### 在线安装Harbor
+1.从github.com上下载harbor，这里使用1.10.2版本，[下载地址](https://github.com/goharbor/harbor/releases/download/v1.10.2/harbor-online-installer-v1.10.2.tgz)
+```
+wget https://github.com/goharbor/harbor/releases/download/v1.10.2/harbor-online-installer-v1.10.2.tgz
+```
+2.解压
+```
+tar -zxvf harbor-online-installer-v1.10.2.tgz
+```
+3.修改配置`harbor/harbor.cfg`(重点关注一下配置内容)
+```
+hostname = #你的域名或IP #harbor域名或IP
+ui_url_protocol = http #默认使用的protocol
+db_password = dbpwd #harbor数据库ROOT用户链接的密码
+max_job_workers = 3
+self_registration = on #允许注册用户
+customize_crt = on
+project_creation_restriction = adminonly #设置只有管理员可以创建项目
+harbor_admin_password = harborpwd #admin用户登录密码
+```
+4.运行安装脚本`sh harbor/install.sh`
+5.启动`docker-compose start`
+### Harbor维护
+Harbor本身是通过docker来运行的，日常维护依赖于docker-compose来维护，harbor的多个服务也是运行在docker中，我们可以通过`docker ps`或者`docekr-compose ps`查看
