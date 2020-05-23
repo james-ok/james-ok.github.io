@@ -12,12 +12,19 @@ tags:
 Redis可以看成是NoSQL数据库，也可以看成是缓存中间件，Redis缺省有16（分别是0-15）个库，每个库中包含多个key，每个key对应的数据类型有五种，分别是String、List、Hash、Set、SortSet
 
 ### 安装
-* [下载](http://download.redis.io/releases/redis-5.0.7.tar.gz) 注意：第二位数字为偶数则代表稳定版，奇数为非稳定版
+* [下载](http://download.redis.io/releases/redis-5.0.7.tar.gz) 注意：第二位数字为偶数则代表稳定版，奇数为非稳定版，一般安装到/usr/local/redis目录下
 * 解压：`tar -zxvf redis-5.0.7.tar.gz`
 * 进入Redis目录：`cd redis-5.0.7`
 * 编译：`make` 注意：这里或许会报错，根据提示安装依赖的库即可解决，例如gcc
 * 测试编译：`make test`
 * 安装：`make install {PREFIX=/path}`
+* 将命令copy到/usr/local/bin下面
+```
+[root@MiWiFi-R3L-srv ~]# cp /usr/local/redis/bin/redis-server /usr/local/bin/
+[root@MiWiFi-R3L-srv ~]# cp /usr/local/redis/bin/redis-cli /usr/local/bin/
+//将配置文件copy到/etc目录下
+[root@MiWiFi-R3L-srv ~]# cp /env/downloads/redis-5.0.5/redis.conf /etc/
+```
 
 ## Redis数据类型
 Redis支持五种数据类型，分别是String、List、Hash、Set、SortSet，五种类型的特性如下：
